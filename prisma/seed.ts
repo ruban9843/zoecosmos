@@ -4,6 +4,7 @@
  *
  * Idempotent — re-running is safe.
  */
+import "dotenv/config";
 import { PrismaClient, Role, ProductStatus, OrderStatus, PaymentStatus, OrderEventKind, SubscriptionCadence, SubscriptionStatus } from "@prisma/client";
 import argon2 from "argon2";
 

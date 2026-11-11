@@ -44,6 +44,7 @@
     "next":            "15.1.6",
     "next-auth":       "^4.24.10",
     "nodemailer":      "^7.0.7",
+    "dotenv":          "^16.4.7",
     "react":           "^19.0.0",
     "react-confetti":  "^6.2.3",
     "react-dom":       "^19.0.0",
