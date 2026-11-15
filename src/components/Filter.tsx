@@ -121,8 +121,8 @@ const Filter = () => {
             onChange={(e) => onPrice(e.target.value)}
           />
           <div className="fs-filter-range">
-            <span>$20</span>
-            <span>up to ${max}</span>
+            <span>₹20</span>
+            <span>up to ₹{max}</span>
           </div>
         </div>
 

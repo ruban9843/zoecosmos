@@ -1,8 +1,9 @@
 import { prisma } from "../../../lib/prisma";
 import StatusPill from "../../../components/admin/StatusPill";
 import SubscriptionActions from "./SubscriptionActions";
+import { formatMoney } from "../../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 const cadenceLabel: Record<string, string> = { WEEKLY: "Weekly", FORTNIGHTLY: "Fortnightly", MONTHLY: "Monthly" };
 
 export default async function AdminSubscriptions() {

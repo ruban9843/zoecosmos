@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../../hooks/useCartStore";
 import BouquetIllustration from "../../components/BouquetIllustration";
+import { formatMoney } from "../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const fmt = formatMoney;
 
 type SavedAddress = {
   id: string; label?: string | null; line1: string; line2?: string | null;
@@ -21,6 +22,7 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [delivery, setDelivery] = useState("today");
+  const [deliveryDate, setDeliveryDate] = useState("");
   // Fees come from the server per method; the order is charged the same way.
   const deliveryFee = deliveryOptions[delivery] ?? defaultFee;
   const total = subtotal + deliveryFee;
@@ -78,6 +80,9 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError(null);
     try {
+      if (delivery === "date" && !deliveryDate) {
+        throw new Error("Please choose a delivery date");
+      }
       const res = await fetch("/api/checkout", {
         method: "POST",
         credentials: "include",
@@ -92,6 +97,9 @@ export default function CheckoutPage() {
           country: "IL",
           delivery,
           deliveryWindow: deliveryLabel(delivery),
+          deliveryDate: delivery === "date"
+            ? new Date(`${deliveryDate}T00:00:00.000Z`).toISOString()
+            : undefined,
           giftMessage: form.giftMessage || undefined,
           email: form.email || undefined,
           name: form.name || undefined,
@@ -150,6 +158,19 @@ export default function CheckoutPage() {
                   </label>
                 ))}
               </div>
+              {delivery === "date" && (
+                <label style={{ display: "block", marginBottom: 16 }}>
+                  <span>Delivery date</span>
+                  <input
+                    type="date"
+                    value={deliveryDate}
+                    min={minDeliveryDate()}
+                    max={maxDeliveryDate()}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    required
+                  />
+                </label>
+              )}
               <button className="fs-btn fs-btn--dark fs-btn--block" onClick={() => setStep(2)}>
                 Continue to details →
               </button>
@@ -197,7 +218,7 @@ export default function CheckoutPage() {
             <section className="fs-form-section">
               <h3>Final look</h3>
               <p style={{ color: "var(--fs-ink-mute)", fontSize: 14, marginTop: -8 }}>
-                Payment is handled by the studio after they accept your order — you&apos;ll get a link by email.
+                We&apos;ll contact you soon to confirm delivery and payment after the studio accepts your order.
               </p>
               <div className="fs-form-grid">
                 <label><span>From</span><div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card">{form.name || "—"}<br/><small className="text-ink-mute">{form.email}</small></div></label>
@@ -259,4 +280,23 @@ function deliveryLabel(id: string) {
     letterbox: "Letterbox · 2–3 days",
     pickup: "Pick up at the shop",
   } as Record<string, string>)[id] || id;
+}
+
+function dateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function minDeliveryDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return dateInputValue(date);
+}
+
+function maxDeliveryDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return dateInputValue(date);
 }

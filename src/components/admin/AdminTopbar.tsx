@@ -2,13 +2,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useUIStore } from "../../hooks/useUIStore";
+import { formatMoney } from "../../lib/currency";
 
 type Order = { id: string; code: string; status: string; total: number; currency: string; recipientName: string };
 type Product = { id: string; slug: string; name: string; sku: string; basePrice: number; currency: string };
 type Customer = { id: string; name: string | null; email: string };
 
-const fmt = (cents: number, currency: string) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0 }).format(cents / 100);
+const fmt = (cents: number) => formatMoney(cents);
 
 export default function AdminTopbar() {
   const now = new Date();
@@ -120,7 +120,7 @@ export default function AdminTopbar() {
                       <Link key={o.id} href={`/admin/orders/${o.code}`} className="ad-search-item" onClick={close}>
                         <span className="ad-table-id">{o.code}</span>
                         <span className="ad-search-item-main">{o.recipientName}</span>
-                        <span className="ad-search-item-sub">{fmt(o.total, o.currency)}</span>
+                        <span className="ad-search-item-sub">{fmt(o.total)}</span>
                       </Link>
                     ))}
                   </div>
@@ -132,7 +132,7 @@ export default function AdminTopbar() {
                       <Link key={p.id} href={`/admin/products/${p.slug}`} className="ad-search-item" onClick={close}>
                         <span className="ad-table-id">{p.sku}</span>
                         <span className="ad-search-item-main">{p.name}</span>
-                        <span className="ad-search-item-sub">{fmt(p.basePrice, p.currency)}</span>
+                        <span className="ad-search-item-sub">{fmt(p.basePrice)}</span>
                       </Link>
                     ))}
                   </div>

@@ -12,6 +12,25 @@ export default function NavIcons() {
   const counter = useCartStore((s) => s.counter);
   const setCartOpen = useUIStore((s) => s.setCartOpen);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isSignedIn) {
+      setIsAdmin(false);
+      return;
+    }
+
+    fetch("/api/account/role")
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Role request failed (${res.status})`);
+        return (await res.json()) as { isAdmin: boolean };
+      })
+      .then((data) => setIsAdmin(data.isAdmin))
+      .catch((error) => {
+        console.warn("[account] could not resolve admin role:", error);
+        setIsAdmin(false);
+      });
+  }, [isSignedIn]);
 
   const handleProfile = () => {
     if (!isSignedIn) {
@@ -40,6 +59,11 @@ export default function NavIcons() {
           <button className="text-left" onClick={() => { setProfileOpen(false); router.push("/account/orders"); }}>
             Orders
           </button>
+          {isAdmin && (
+            <button className="text-left" onClick={() => { setProfileOpen(false); router.push("/admin"); }}>
+              Admin
+            </button>
+          )}
           <button className="text-left text-ink-mute" onClick={() => signOut({ redirectUrl: "/" })}>
             Sign out
           </button>

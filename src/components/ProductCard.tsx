@@ -5,6 +5,7 @@ import BouquetIllustration from "./BouquetIllustration";
 import { useCartStore } from "../hooks/useCartStore";
 import { useUIStore } from "../hooks/useUIStore";
 import type { ProductSummary } from "../lib/product-api";
+import { formatMoney } from "../lib/currency";
 
 type Props = {
   product: ProductSummary;
@@ -31,7 +32,7 @@ export default function ProductCard({ product, index = 0 }: Props) {
   };
 
   const primary = p.images?.find((i) => i.isPrimary) || p.images?.[0];
-  const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+  const fmt = formatMoney;
 
   return (
     <article

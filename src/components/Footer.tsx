@@ -71,7 +71,7 @@ export default function Footer() {
       <div className="fs-foot-bottom">
         <span>© 2026 Flower Shop. Made with stems and sunlight.</span>
         <span>Florentin 22 · Tel Aviv</span>
-        <span>EN · USD</span>
+        <span>EN · INR</span>
       </div>
     </footer>
   );

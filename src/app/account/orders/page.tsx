@@ -2,8 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "../../../lib/auth";
 import { prisma } from "../../../lib/prisma";
+import { formatMoney } from "../../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 
 export default async function CustomerOrders() {
   const session = await auth();
@@ -47,6 +48,9 @@ export default async function CustomerOrders() {
                   ))}
                 </ul>
               )}
+              <Link href={`/account/orders/${o.code}`} className="fs-link-btn inline-block mt-4">
+                Track this order →
+              </Link>
             </li>
           ))}
         </ul>

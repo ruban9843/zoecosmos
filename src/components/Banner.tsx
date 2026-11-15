@@ -1,7 +1,7 @@
 import React from "react";
 
 const messages = [
-  "Free same-day delivery in Tel Aviv on orders over $50",
+  "Free same-day delivery in Tel Aviv on orders over ₹5,000",
   "Spring market this Saturday — Florentin, 9 to 1",
   "Letterbox flowers now ship UK-wide",
 ];

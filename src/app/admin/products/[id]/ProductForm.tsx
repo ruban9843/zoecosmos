@@ -162,7 +162,7 @@ export default function ProductForm({ product, categories }: { product?: Product
             </div>
             <div className="ad-form-row-2">
               <div className="ad-form-row" style={{ marginBottom: 0 }}>
-                <label>Price (USD)</label>
+                <label>Price (INR)</label>
                 <input type="number" step="0.01" value={form.basePrice} onChange={set("basePrice")} />
               </div>
               <div className="ad-form-row" style={{ marginBottom: 0 }}>

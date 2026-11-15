@@ -38,15 +38,19 @@ export const POST = route(async (req: Request) => {
   if (!product || product.status !== "ACTIVE") return bad("Product unavailable", 404);
   const variant = data.variantId
     ? await prisma.productVariant.findUnique({ where: { id: data.variantId } })
-    : null;
+    : await prisma.productVariant.findFirst({
+        where: { productId: product.id },
+        orderBy: { sortOrder: "asc" },
+      });
   if (data.variantId && !variant) return bad("Variant unavailable", 404);
+  const variantId = variant?.id ?? null;
 
   // Merge if same product+variant already in cart.
   const existing = await prisma.cartItem.findFirst({
     where: {
       cartId: cart.id,
       productId: data.productId,
-      variantId: data.variantId || null,
+      variantId,
       addVase: data.addVase,
     },
   });
@@ -66,7 +70,7 @@ export const POST = route(async (req: Request) => {
       data: {
         cartId: cart.id,
         productId: data.productId,
-        variantId: data.variantId || null,
+        variantId,
         qty: data.qty,
         addVase: data.addVase,
         giftMessage: data.giftMessage,

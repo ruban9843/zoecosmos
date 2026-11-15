@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useCartStore } from "../hooks/useCartStore";
 import { useUIStore } from "../hooks/useUIStore";
 import BouquetIllustration from "./BouquetIllustration";
+import { formatMoney } from "../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 
 export default function CartDrawer() {
   const lines     = useCartStore((s) => s.lines);

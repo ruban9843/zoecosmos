@@ -2,11 +2,11 @@ import React from "react";
 
 const items = [
   "❀ Peony season — May to early July",
-  "✿ Subscriptions from $42 / month",
+  "✿ Subscriptions from ₹4,200 / month",
   "❁ Letterbox flowers, posted UK-wide",
   "✾ Saturday market, Florentin",
   "❀ Workshops every other Thursday",
-  "✿ Free delivery over $50",
+  "✿ Free delivery over ₹5,000",
 ];
 
 export default function Ticker() {

@@ -1,29 +1,29 @@
 import { describe, it, expect } from "vitest";
 import { deliveryFee, deliveryFees } from "../../src/lib/pricing";
 
-const cfg = { feeCents: 600, freeOverCents: 5000 };
+const cfg = { feeCents: 60000, freeOverCents: 500000 };
 
 describe("delivery fee", () => {
   it("charges the configured fee for same-day", () => {
-    expect(deliveryFee("today", 3000, cfg)).toBe(600);
+    expect(deliveryFee("today", 30000, cfg)).toBe(60000);
   });
 
   it("charges less for scheduled runs", () => {
-    expect(deliveryFee("tomorrow", 3000, cfg)).toBe(400);
-    expect(deliveryFee("date", 3000, cfg)).toBe(400);
+    expect(deliveryFee("tomorrow", 30000, cfg)).toBe(40000);
+    expect(deliveryFee("date", 30000, cfg)).toBe(40000);
   });
 
   it("never makes scheduled dearer than same-day", () => {
-    expect(deliveryFee("tomorrow", 3000, { feeCents: 300, freeOverCents: null })).toBe(300);
+    expect(deliveryFee("tomorrow", 30000, { feeCents: 30000, freeOverCents: null })).toBe(30000);
   });
 
   it("is free for letterbox and pickup", () => {
-    expect(deliveryFee("letterbox", 3000, cfg)).toBe(0);
-    expect(deliveryFee("pickup", 3000, cfg)).toBe(0);
+    expect(deliveryFee("letterbox", 30000, cfg)).toBe(0);
+    expect(deliveryFee("pickup", 30000, cfg)).toBe(0);
   });
 
   it("is free above the threshold and for an empty cart", () => {
-    expect(deliveryFees(5000, cfg)).toEqual({ today: 0, tomorrow: 0, date: 0, letterbox: 0, pickup: 0 });
+    expect(deliveryFees(500000, cfg)).toEqual({ today: 0, tomorrow: 0, date: 0, letterbox: 0, pickup: 0 });
     expect(deliveryFee("today", 0, cfg)).toBe(0);
   });
 });

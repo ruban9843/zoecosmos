@@ -29,6 +29,14 @@ const schema = z.object({
   // session email instead.
   email: z.string().email().optional(),
   name:  z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.delivery === "date" && !data.deliveryDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["deliveryDate"],
+      message: "A delivery date is required",
+    });
+  }
 });
 
 /** Order code generator: FS-XXXXX, retry on collision. */

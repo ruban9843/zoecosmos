@@ -62,7 +62,7 @@ export default function Hero() {
           <div className="fs-hero-card">
             <div className="fs-hero-card-row">
               <span className="fs-hero-card-label">In the window today</span>
-              <span className="fs-hero-card-price">$64</span>
+              <span className="fs-hero-card-price">₹6,400</span>
             </div>
             <h4>Midsummer Meadow</h4>
             <p>

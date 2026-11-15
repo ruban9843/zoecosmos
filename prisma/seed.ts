@@ -52,40 +52,40 @@ async function main() {
 
   // 3. Products ---------------------------------------------------------------
   const products = [
-    { slug: "midsummer-meadow", name: "Midsummer Meadow", sku: "MM-STD-001", category: "bouquets",  price: 6400, palette: ["#f5b8c4","#f7d76b","#a8c98a","#e8a4a4"], badge: "Bestseller",
+    { slug: "midsummer-meadow", name: "Midsummer Meadow", sku: "MM-STD-001", category: "bouquets",  price: 640000, palette: ["#f5b8c4","#f7d76b","#a8c98a","#e8a4a4"], badge: "Bestseller",
       short: "A wild armful of pinks, ochres and chamomile, gathered as if from a sun-warm field.",
       long:  "Cut at first light from our Galilee partner growers — David Austin garden roses, scabiosa, ammi majus, billy buttons and bursts of feverfew.",
       stems: 28, height: "42 cm", vase: "Wide-mouth",
       stemComp: [["Garden rose · David Austin",6,"#f5b8c4"],["Scabiosa",5,"#7a8a5a"],["Ammi majus",4,"#ffffff"],["Billy buttons",3,"#f7d76b"],["Feverfew",3,"#ffffff"],["Eucalyptus",1,"#9bb38a"]] },
-    { slug: "white-linen", name: "White Linen", sku: "WL-STD-002", category: "bouquets",  price: 5800, palette: ["#ffffff","#f4ead8","#9bb38a","#e7d9c0"], badge: "New",
+    { slug: "white-linen", name: "White Linen", sku: "WL-STD-002", category: "bouquets",  price: 580000, palette: ["#ffffff","#f4ead8","#9bb38a","#e7d9c0"], badge: "New",
       short: "Cream peonies, lisianthus and silver eucalyptus — the colour of a Sunday morning.",
       long:  "Our most-requested bridal palette, also wonderful for housewarmings and hellos.",
       stems: 22, height: "38 cm", vase: "Tall" },
-    { slug: "burgundy-hour", name: "Burgundy Hour", sku: "BH-STD-003", category: "bouquets",  price: 7200, palette: ["#7a2330","#c84d5a","#e8a4a4","#3a4a2e"],
+    { slug: "burgundy-hour", name: "Burgundy Hour", sku: "BH-STD-003", category: "bouquets",  price: 720000, palette: ["#7a2330","#c84d5a","#e8a4a4","#3a4a2e"],
       short: "Deep dahlias, cosmos and copper beech for the long evenings.",
       long:  "An autumn-leaning arrangement that reads like velvet curtains at dusk.",
       stems: 24, height: "44 cm", vase: "Wide" },
-    { slug: "rosemary-grove", name: "Rosemary Grove", sku: "RG-POT-004", category: "plants",    price: 4900, palette: ["#5a7a4a","#3a4a2e","#c4cfae","#e8d9c4"],
+    { slug: "rosemary-grove", name: "Rosemary Grove", sku: "RG-POT-004", category: "plants",    price: 490000, palette: ["#5a7a4a","#3a4a2e","#c4cfae","#e8d9c4"],
       short: "Potted rosemary in hand-thrown stoneware. A kitchen companion.",
       long:  "Mature rosemary, ~30cm tall, in a glazed terracotta pot from our partner studio in Hebron.",
       height: "30 cm", vase: "8\" pot" },
-    { slug: "first-light-orchid", name: "First Light Orchid", sku: "FL-POT-005", category: "plants", price: 8800, palette: ["#f5d5d5","#ffffff","#7a8a6a","#3d2f24"], badge: "Limited",
+    { slug: "first-light-orchid", name: "First Light Orchid", sku: "FL-POT-005", category: "plants", price: 880000, palette: ["#f5d5d5","#ffffff","#7a8a6a","#3d2f24"], badge: "Limited",
       short: "Phalaenopsis in soft pink. Quiet and architectural.",
       long:  "Twin-spike phalaenopsis, expected bloom 8–12 weeks. Includes a moss-lined ceramic pot.",
       height: "55 cm", vase: "Ceramic" },
-    { slug: "ceremony-cloud", name: "Ceremony Cloud", sku: "CC-WED-006", category: "weddings",  price: 24000, palette: ["#ffffff","#f4ead8","#e8c8b9","#cdd9bd"],
+    { slug: "ceremony-cloud", name: "Ceremony Cloud", sku: "CC-WED-006", category: "weddings",  price: 2400000, palette: ["#ffffff","#f4ead8","#e8c8b9","#cdd9bd"],
       short: "Bridal bouquet — ivory, blush, soft sage. Trailing ribbons.",
       long:  "Custom-built to your dress and venue. Includes a complimentary buttonhole.",
       stems: 36, height: "48 cm", vase: "Hand-held" },
-    { slug: "sunday-letterbox", name: "Sunday Letterbox", sku: "SL-LTR-007", category: "letterbox", price: 3200, palette: ["#f5b8c4","#f7d76b","#cdd9bd","#e6dcef"],
+    { slug: "sunday-letterbox", name: "Sunday Letterbox", sku: "SL-LTR-007", category: "letterbox", price: 320000, palette: ["#f5b8c4","#f7d76b","#cdd9bd","#e6dcef"],
       short: "Posted through the door, in flower for a week.",
       long:  "Compact-stemmed flowers shipped in bud, packed in a recyclable letterbox-friendly carton.",
       stems: 14, height: "26 cm", vase: "Any small vase" },
-    { slug: "everlasting-honey", name: "Everlasting Honey", sku: "EH-DRY-008", category: "dried",    price: 4200, palette: ["#d8a96a","#efe2c7","#a98456","#3d2f24"],
+    { slug: "everlasting-honey", name: "Everlasting Honey", sku: "EH-DRY-008", category: "dried",    price: 420000, palette: ["#d8a96a","#efe2c7","#a98456","#3d2f24"],
       short: "Dried palm, pampas and bunny tails. Honey-toned and lasts a year.",
       long:  "No water needed. Keep out of direct sun to preserve colour.",
       stems: 18, height: "50 cm", vase: "Slim" },
-    { slug: "second-breakfast", name: "Second Breakfast", sku: "SB-GFT-009", category: "gifts",    price: 5400, palette: ["#e8c8b9","#f7d76b","#3d2f24","#9bb38a"], badge: "Pair",
+    { slug: "second-breakfast", name: "Second Breakfast", sku: "SB-GFT-009", category: "gifts",    price: 540000, palette: ["#e8c8b9","#f7d76b","#3d2f24","#9bb38a"], badge: "Pair",
       short: "Posy + a tin of Earl Grey + honeycomb. A morning in a box.",
       long:  "Pairs a small posy with our partner roastery's tea and a slab of local honeycomb.",
       stems: 12, height: "24 cm", vase: "Included" },
@@ -97,7 +97,7 @@ async function main() {
       where: { slug: p.slug },
       update: {
         name: p.name, sku: p.sku, shortDesc: p.short, longDesc: p.long, badge: p.badge,
-        basePrice: p.price, palette: p.palette as any, height: p.height, vase: p.vase,
+        basePrice: p.price, currency: "INR", palette: p.palette as any, height: p.height, vase: p.vase,
         categoryId: cats[p.category],
       },
       create: {
@@ -109,6 +109,7 @@ async function main() {
         badge: p.badge,
         status: ProductStatus.ACTIVE,
         basePrice: p.price,
+        currency: "INR",
         palette: p.palette as any,
         height: p.height,
         vase: p.vase,
@@ -118,9 +119,9 @@ async function main() {
 
     // Variants
     const variantData = [
-      { label: "Posy",     sku: `${p.sku}-S`, stems: Math.round(stems * 0.6), priceDelta: -1200, stockQty: 6, sortOrder: 0 },
+      { label: "Posy",     sku: `${p.sku}-S`, stems: Math.round(stems * 0.6), priceDelta: -120000, stockQty: 6, sortOrder: 0 },
       { label: "Standard", sku: p.sku,         stems,                          priceDelta: 0,     stockQty: 4, sortOrder: 1 },
-      { label: "Generous", sku: `${p.sku}-L`, stems: Math.round(stems * 1.4), priceDelta: 1800,  stockQty: 2, sortOrder: 2 },
+      { label: "Generous", sku: `${p.sku}-L`, stems: Math.round(stems * 1.4), priceDelta: 180000,  stockQty: 2, sortOrder: 2 },
     ];
     for (const v of variantData) {
       await prisma.productVariant.upsert({
@@ -173,7 +174,8 @@ async function main() {
     const [status, pay, window] = statusFlow[i];
     const customer = customers[i % customers.length];
     const p = allProducts[i % allProducts.length];
-    const variant = p.variants.find((v) => v.label === "Standard")!;
+    const variant = p.variants.find((v) => v.label === "Standard") ?? p.variants[0];
+    if (!variant) continue;
     const unit = p.basePrice + variant.priceDelta;
     const total = unit + 600;
     const order = await prisma.order.create({
@@ -229,8 +231,8 @@ async function main() {
         sameDayCutoff: "12:00",
         lastSlot: "18:00",
         windows: ["9 – 12", "12 – 3", "3 – 6", "Pick up"],
-        feeCents: 600,
-        freeOverCents: 5000,
+        feeCents: 60000,
+        freeOverCents: 500000,
       } as any,
     },
   });

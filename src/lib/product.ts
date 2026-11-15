@@ -41,7 +41,7 @@ export function fromWixProduct(p: any): DisplayProduct {
       short: "",
       long: "",
       price: 0,
-      currency: "USD",
+      currency: "INR",
       palette: DEFAULT_PALETTE,
       height: "—",
       vase: "—",
@@ -71,7 +71,7 @@ export function fromWixProduct(p: any): DisplayProduct {
       p.priceData?.discountedPrice && p.priceData?.discountedPrice !== p.priceData?.price
         ? p.priceData?.price
         : undefined,
-    currency: p.priceData?.currency || "USD",
+    currency: p.priceData?.currency || "INR",
     palette: DEFAULT_PALETTE,
     badge: p.ribbon || undefined,
     stems: null,

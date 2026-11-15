@@ -2,8 +2,9 @@ import React from "react";
 import Link from "next/link";
 import BouquetIllustration from "../../components/BouquetIllustration";
 import { findViewableOrder } from "../../lib/orders";
+import { formatMoney } from "../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const fmt = formatMoney;
 
 export default async function SuccessPage({
   searchParams,
@@ -24,8 +25,7 @@ export default async function SuccessPage({
       <span className="fs-section-eyebrow">Order {order?.code || "received"}</span>
       <h1>Off they go.</h1>
       <p>
-        We&apos;re tying it now. Look out for a photo of your bouquet before it leaves the
-        shop — we send one to every customer.
+        We&apos;ve received your order. We&apos;ll contact you soon to confirm delivery and payment.
       </p>
 
       {order && (

@@ -4,7 +4,9 @@ import { prisma } from "../../../../lib/prisma";
 import StatusPill from "../../../../components/admin/StatusPill";
 import OrderActions, { NoteForm } from "./OrderActions";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+import { formatMoney } from "../../../../lib/currency";
+
+const fmt = formatMoney;
 
 const when = (d: Date) =>
   new Date(d).toLocaleString("en-GB", {

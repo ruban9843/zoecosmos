@@ -84,7 +84,7 @@ async function mutate(set: any, work: () => Promise<any>) {
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
-  cartId: null, lines: [], subtotal: 0, deliveryFee: 0, deliveryOptions: {}, total: 0, currency: "USD",
+  cartId: null, lines: [], subtotal: 0, deliveryFee: 0, deliveryOptions: {}, total: 0, currency: "INR",
   counter: 0, loading: false,
 
   fetchCart: async () => {

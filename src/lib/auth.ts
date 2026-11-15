@@ -37,6 +37,15 @@ export async function auth(): Promise<AppSession | null> {
         update: { clerkUserId: userId, name, image },
         create: { clerkUserId: userId, email, name, image },
       });
+  const configuredOwnerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+  const role =
+    configuredOwnerEmail
+      ? email === configuredOwnerEmail
+        ? "OWNER"
+        : user.role === "OWNER"
+          ? "CUSTOMER"
+          : user.role
+      : user.role;
 
   return {
     user: {
@@ -44,7 +53,7 @@ export async function auth(): Promise<AppSession | null> {
       email: user.email,
       name: user.name,
       image: user.image,
-      role: user.role,
+      role,
     },
   };
 }

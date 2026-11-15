@@ -1,6 +1,7 @@
 import { prisma } from "../../../lib/prisma";
+import { formatMoney } from "../../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 
 export default async function AdminCustomers() {
   const customers = await prisma.user.findMany({

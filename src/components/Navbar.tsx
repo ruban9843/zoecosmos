@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FlowerShopMark from "./FlowerShopMark";
 import NavIcons from "./NavIcons";
+import { formatMoney } from "../lib/currency";
 
 type SearchHit = {
   slug: string;
@@ -12,7 +13,7 @@ type SearchHit = {
   images: { url: string; isPrimary: boolean }[];
 };
 
-const fmtPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmtPrice = formatMoney;
 
 const navLinks = [
   { slug: "bouquets", title: "Bouquets" },

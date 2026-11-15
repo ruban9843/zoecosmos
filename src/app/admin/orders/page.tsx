@@ -4,7 +4,9 @@ import StatusPill from "../../../components/admin/StatusPill";
 import OrdersToolbar from "./OrdersToolbar";
 import ClickableRow from "../../../components/admin/ClickableRow";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+import { formatMoney } from "../../../lib/currency";
+
+const fmt = formatMoney;
 
 export default async function AdminOrders({
   searchParams,

@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
+import { formatMoney } from "../../../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const fmt = formatMoney;
 
 const EVENT_LABEL: Record<string, string> = {
   PLACED: "Order placed",

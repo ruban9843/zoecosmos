@@ -2,8 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
+import { formatMoney } from "../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 
 export default async function AccountPage() {
   const session = await auth();

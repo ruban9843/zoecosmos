@@ -4,7 +4,7 @@
  * are the only callers.
  */
 
-export const VASE_CENTS = 1400;
+export const VASE_CENTS = 140000;
 
 type ProductLike = { id: string; status: string; basePrice: number };
 type VariantLike = { id: string; productId: string; priceDelta: number; stockQty: number };
@@ -41,7 +41,7 @@ export type DeliveryOption = (typeof DELIVERY_OPTIONS)[number];
 export type DeliveryConfig = { feeCents: number; freeOverCents: number | null };
 
 /** Scheduled (next-day or later) courier runs cost less than same-day. */
-const SCHEDULED_FEE_CENTS = 400;
+const SCHEDULED_FEE_CENTS = 40000;
 
 /**
  * Fee for one delivery method. Same-day uses the owner-configured fee,

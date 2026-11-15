@@ -6,8 +6,9 @@
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatMoney } from "../../../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 
 type Status = "NEW" | "TYING" | "READY" | "OUT_FOR_DELIVERY";
 

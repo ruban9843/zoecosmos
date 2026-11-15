@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "../hooks/useCartStore";
 import { useUIStore } from "../hooks/useUIStore";
 import type { ProductDetail } from "../lib/product-api";
+import { formatMoney } from "../lib/currency";
 
-const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+const fmt = formatMoney;
 
 export default function CustomizeProducts({ product }: { product: ProductDetail }) {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function CustomizeProducts({ product }: { product: ProductDetail 
             <span>No vase</span><span>—</span>
           </button>
           <button type="button" className={"fs-toggle" + (vase ? " fs-toggle--on" : "")} onClick={() => setVase(true)}>
-            <span>Stoneware vase</span><span>+$14</span>
+            <span>Stoneware vase</span><span>{formatMoney(1400)}</span>
           </button>
         </div>
       </div>

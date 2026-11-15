@@ -112,13 +112,13 @@ export async function mergeAnonCartIntoUserCart(userId: string) {
 
 /**
  * Delivery pricing, read from the owner-editable `shop.delivery` setting.
- * Falls back to a $6 same-day fee if unset; per-method fees come from lib/pricing.
+ * Falls back to a ₹600 same-day fee if unset; per-method fees come from lib/pricing.
  */
 async function deliveryConfig() {
   const row = await prisma.setting.findUnique({ where: { key: "shop.delivery" } });
   const v = (row?.value as any) || {};
   return {
-    feeCents: typeof v.feeCents === "number" ? v.feeCents : 600,
+    feeCents: typeof v.feeCents === "number" ? v.feeCents : 60000,
     freeOverCents: typeof v.freeOverCents === "number" ? v.freeOverCents : null,
   };
 }
@@ -161,5 +161,5 @@ export async function priceCart(cartId: string, delivery: DeliveryOption = "toda
   const deliveryOptions = deliveryFees(subtotal, await deliveryConfig());
   const deliveryFee = deliveryOptions[delivery];
   const total = subtotal + deliveryFee;
-  return { lines, subtotal, delivery, deliveryFee, deliveryOptions, total, currency: "USD" };
+  return { lines, subtotal, delivery, deliveryFee, deliveryOptions, total, currency: "INR" };
 }
