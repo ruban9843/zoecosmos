@@ -6,7 +6,7 @@ import AddressBook from "./AddressBook";
 
 export default async function AddressesPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login?callbackUrl=/account/addresses");
+  if (!session?.user) redirect("/sign-in?redirect_url=/account/addresses");
 
   const addresses = await prisma.address.findMany({
     where: { userId: session.user.id },

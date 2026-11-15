@@ -6,14 +6,25 @@
  * singleton pattern mirrors prisma.ts to avoid piling up connections on
  * hot-reload during dev.
  */
+import { Redis as UpstashRedis } from "@upstash/redis";
 import Redis from "ioredis";
+
+export interface RedisRateLimitClient {
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+  ttl(key: string): Promise<number>;
+}
 
 declare global {
   // eslint-disable-next-line no-var
-  var redisGlobal: Redis | null | undefined;
+  var redisGlobal: RedisRateLimitClient | null | undefined;
 }
 
-function createClient(): Redis | null {
+function createClient(): RedisRateLimitClient | null {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return UpstashRedis.fromEnv();
+  }
+
   const url = process.env.REDIS_URL;
   if (!url) return null;
 
@@ -30,7 +41,7 @@ function createClient(): Redis | null {
   return client;
 }
 
-export const redis: Redis | null =
+export const redis: RedisRateLimitClient | null =
   global.redisGlobal ?? createClient();
 
 if (process.env.NODE_ENV !== "production") {

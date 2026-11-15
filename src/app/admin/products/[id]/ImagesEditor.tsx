@@ -18,10 +18,10 @@ export default function ImagesEditor({ productId, images }: { productId: string;
       const signRes = await fetch("/api/admin/upload-url", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ contentType: file.type, prefix: `products/${productId}` }),
+        body: JSON.stringify({ contentType: file.type, contentLength: file.size, prefix: `products/${productId}` }),
       });
       if (!signRes.ok) throw new Error((await signRes.json().catch(() => ({}))).error || "Could not sign upload");
-      const { uploadUrl, publicUrl } = await signRes.json();
+      const { uploadUrl, publicUrl, key } = await signRes.json();
 
       const putRes = await fetch(uploadUrl, { method: "PUT", headers: { "content-type": file.type }, body: file });
       if (!putRes.ok) throw new Error("Upload to storage failed");
@@ -29,7 +29,7 @@ export default function ImagesEditor({ productId, images }: { productId: string;
       const attachRes = await fetch(`/api/admin/products/${productId}/images`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: publicUrl }),
+        body: JSON.stringify({ url: publicUrl, objectKey: key }),
       });
       if (!attachRes.ok) throw new Error((await attachRes.json().catch(() => ({}))).error || "Could not save image");
 

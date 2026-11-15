@@ -7,7 +7,7 @@ const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
 export default async function CustomerOrders() {
   const session = await auth();
-  if (!session?.user) redirect("/login?callbackUrl=/account/orders");
+  if (!session?.user) redirect("/sign-in?redirect_url=/account/orders");
 
   const orders = await prisma.order.findMany({
     where: { userId: session.user.id },

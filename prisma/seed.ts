@@ -6,7 +6,6 @@
  */
 import "dotenv/config";
 import { PrismaClient, Role, ProductStatus, OrderStatus, PaymentStatus, OrderEventKind, SubscriptionCadence, SubscriptionStatus } from "@prisma/client";
-import argon2 from "argon2";
 
 const prisma = new PrismaClient();
 
@@ -20,21 +19,16 @@ async function main() {
 
   // 1. Owner account ----------------------------------------------------------
   const ownerEmail = process.env.OWNER_EMAIL || "owner@flower-shop.local";
-  const ownerPassword = process.env.OWNER_PASSWORD || "studio";
-  const passwordHash = await argon2.hash(ownerPassword);
-
   const owner = await prisma.user.upsert({
     where: { email: ownerEmail },
-    update: { role: Role.OWNER, passwordHash, emailVerified: new Date() },
+    update: { role: Role.OWNER },
     create: {
       email: ownerEmail,
       name: "Naama Levi",
       role: Role.OWNER,
-      passwordHash,
-      emailVerified: new Date(),
     },
   });
-  console.log(`  owner: ${owner.email} (password: ${ownerPassword})`);
+  console.log(`  owner role record: ${owner.email} (sign in with Clerk using this email)`);
 
   // 2. Categories -------------------------------------------------------------
   const catData = [
@@ -160,7 +154,7 @@ async function main() {
     const u = await prisma.user.upsert({
       where: { email: c.email },
       update: { name: c.name },
-      create: { email: c.email, name: c.name, role: Role.CUSTOMER, emailVerified: new Date() },
+      create: { email: c.email, name: c.name, role: Role.CUSTOMER },
     });
     customers.push(u);
   }

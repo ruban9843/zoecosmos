@@ -1,5 +1,10 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import {
+  Cormorant_Garamond,
+  Inter_Tight,
+  JetBrains_Mono,
+} from "next/font/google";
 import "./globals.css";
 import Banner from "../components/Banner";
 import Navbar from "../components/Navbar";
@@ -55,18 +60,38 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      className={`${serif.variable} ${sans.variable} ${mono.variable}`}
+    >
       <body className="bg-bg text-ink font-sans antialiased">
-        <Providers>
-          <ShopChrome
-            top={<><Banner /><Navbar /></>}
-            bottom={<><Footer /><CartDrawer /><Toast /></>}
-          >
-            {children}
-          </ShopChrome>
-        </Providers>
+        <ClerkProvider>
+          <Providers>
+            <ShopChrome
+              top={
+                <>
+                  <Banner />
+                  <Navbar />
+                </>
+              }
+              bottom={
+                <>
+                  <Footer />
+                  <CartDrawer />
+                  <Toast />
+                </>
+              }
+            >
+              {children}
+            </ShopChrome>
+          </Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -25,7 +25,7 @@ export default async function CustomerOrderDetail({
 }) {
   const { code } = await params;
   const session = await auth();
-  if (!session?.user) redirect(`/login?callbackUrl=/account/orders/${code}`);
+  if (!session?.user) redirect(`/sign-in?redirect_url=/account/orders/${code}`);
 
   const order = await prisma.order.findFirst({
     where: { code, userId: session.user.id },

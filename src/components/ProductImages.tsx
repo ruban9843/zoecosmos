@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import Image from "next/image";
 import BouquetIllustration from "./BouquetIllustration";
 
 type Item = { _id?: string; image?: { url?: string } };
@@ -30,12 +29,11 @@ export default function ProductImages({
       >
         {badge && <span className="fs-product-badge">{badge}</span>}
         {main?.image?.url ? (
-          <Image
+          <img
             src={main.image.url}
             alt={name || ""}
-            fill
-            sizes="(min-width: 1024px) 50vw, 100vw"
             className="object-cover"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           />
         ) : (
           <BouquetIllustration
@@ -60,12 +58,11 @@ export default function ProductImages({
               aria-label={`Image ${i + 1}`}
             >
               {it.image?.url ? (
-                <Image
+                <img
                   src={it.image.url}
                   alt=""
-                  fill
-                  sizes="80px"
                   className="object-cover"
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
                 />
               ) : (
                 <BouquetIllustration palette={fallbackPalette} seed={i * 7 + 1} />

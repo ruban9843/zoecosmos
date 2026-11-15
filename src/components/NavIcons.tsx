@@ -1,20 +1,21 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { useCartStore } from "../hooks/useCartStore";
 import { useUIStore } from "../hooks/useUIStore";
 
 export default function NavIcons() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
   const counter = useCartStore((s) => s.counter);
   const setCartOpen = useUIStore((s) => s.setCartOpen);
   const [profileOpen, setProfileOpen] = React.useState(false);
 
   const handleProfile = () => {
-    if (!session) {
-      router.push("/login");
+    if (!isSignedIn) {
+      router.push("/sign-in");
       return;
     }
     setProfileOpen((s) => !s);
@@ -28,10 +29,10 @@ export default function NavIcons() {
           <path d="M3.5 17a6.5 6.5 0 0 1 13 0" />
         </svg>
       </button>
-      {profileOpen && session && (
+      {profileOpen && isSignedIn && user && (
         <div className="absolute right-12 top-14 z-30 bg-bg-card border border-[var(--fs-line)] rounded-lg shadow-lg p-3 text-sm flex flex-col gap-2 min-w-[180px]">
           <div className="text-xs text-ink-mute pb-2 mb-1 border-b border-[var(--fs-line-soft)]">
-            Signed in as <b className="text-ink">{session.user.email}</b>
+            Signed in as <b className="text-ink">{user.primaryEmailAddress?.emailAddress}</b>
           </div>
           <button className="text-left" onClick={() => { setProfileOpen(false); router.push("/account"); }}>
             Account
@@ -39,12 +40,7 @@ export default function NavIcons() {
           <button className="text-left" onClick={() => { setProfileOpen(false); router.push("/account/orders"); }}>
             Orders
           </button>
-          {(session.user.role === "STAFF" || session.user.role === "OWNER") && (
-            <button className="text-left text-accent" onClick={() => { setProfileOpen(false); router.push("/admin"); }}>
-              Open admin →
-            </button>
-          )}
-          <button className="text-left text-ink-mute" onClick={() => signOut({ callbackUrl: "/" })}>
+          <button className="text-left text-ink-mute" onClick={() => signOut({ redirectUrl: "/" })}>
             Sign out
           </button>
         </div>

@@ -3,6 +3,7 @@ import { prisma } from "../../../../../../../lib/prisma";
 import { json, route, bad, readBody } from "../../../../../../../lib/api";
 import { requireStaff } from "../../../../../../../lib/auth-helpers";
 import { invalidateCatalog } from "../../../../../../../lib/catalog";
+import { deleteObject } from "../../../../../../../lib/upload";
 
 type Params = { params: Promise<{ id: string; imageId: string }> };
 
@@ -20,6 +21,7 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
   const image = await prisma.productImage.findFirst({ where: { id: imageId, productId: id } });
   if (!image) return bad("Image not found", 404);
 
+  await deleteObject(image.objectKey);
   await prisma.$transaction(async (tx) => {
     if (data.isPrimary) {
       await tx.productImage.updateMany({ where: { productId: id }, data: { isPrimary: false } });

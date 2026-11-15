@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import BouquetIllustration from "./BouquetIllustration";
 import { useCartStore } from "../hooks/useCartStore";
 import { useUIStore } from "../hooks/useUIStore";
@@ -48,7 +47,7 @@ export default function ProductCard({ product, index = 0 }: Props) {
           }}
         >
           {primary?.url ? (
-            <Image src={primary.url} alt={p.name} fill sizes="(min-width: 1024px) 33vw, 50vw" className="object-cover" />
+            <img src={primary.url} alt={p.name} className="object-cover" style={{ width: "100%", height: "100%", display: "block" }} />
           ) : (
             <BouquetIllustration
               palette={p.palette}

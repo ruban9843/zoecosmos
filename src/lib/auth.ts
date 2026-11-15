@@ -1,155 +1,50 @@
-/**
- * NextAuth (Auth.js) configuration.
- *
- * Two ways to sign in:
- *  - Customers: magic email link  → `EmailProvider`
- *  - Staff:     email + password  → `CredentialsProvider` (argon2 hash)
- *
- * Plus Google OAuth when configured.
- *
- * Roles live on `User.role` (CUSTOMER | STAFF | OWNER) and are exposed via
- * the session so the UI can branch on `session.user.role`.
- */
-import { NextAuthOptions, getServerSession } from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import CredentialsProvider from "next-auth/providers/credentials";
-import EmailProvider from "next-auth/providers/email";
-import GoogleProvider from "next-auth/providers/google";
-import argon2 from "argon2";
-import nodemailer from "nodemailer";
-import { prisma } from "./prisma";
-import { rateLimit } from "./rate-limit";
+import { auth as clerkAuth, currentUser } from "@clerk/nextjs/server";
 import type { Role } from "@prisma/client";
+import { prisma } from "./prisma";
 
-/**
- * Sends the customer magic-link email, throttled per address so the sign-in
- * form can't be used to spam someone's inbox. Fails open if Redis is absent.
- */
-async function sendMagicLink(params: {
-  identifier: string;
-  url: string;
-  provider: { server: any; from?: string };
-}) {
-  const email = params.identifier.toLowerCase();
-  const { ok, resetSec } = await rateLimit(`magic-link:${email}`, { limit: 3, windowSec: 600 });
-  if (!ok) {
-    throw new Error(`Too many sign-in emails. Please try again in ${resetSec}s.`);
-  }
-
-  const transport = nodemailer.createTransport(params.provider.server);
-  const { host } = new URL(params.url);
-  await transport.sendMail({
-    to: params.identifier,
-    from: params.provider.from,
-    subject: `Sign in to ${host}`,
-    text: `Sign in to Flower Shop\n${params.url}\n\nIf you didn't request this, you can ignore this email.`,
-    html: `
-      <div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#2b2b2b">
-        <h1 style="font-size:22px;margin:0 0 12px">🌸 Flower Shop</h1>
-        <p style="margin:0 0 20px;line-height:1.5">Tap the button below to sign in. This link is good for 30 minutes.</p>
-        <a href="${params.url}" style="display:inline-block;background:#2b2b2b;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px">Sign in</a>
-        <p style="margin:24px 0 0;font-size:12px;color:#888">If you didn't request this, you can safely ignore this email.</p>
-      </div>`,
-  });
-}
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      email: string;
-      name?: string | null;
-      image?: string | null;
-      role: Role;
-    };
-  }
-  interface User {
-    role: Role;
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    role?: Role;
-    uid?: string;
-  }
-}
-
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-    verifyRequest: "/login?check-email=1",
-  },
-  providers: [
-    EmailProvider({
-      server: process.env.EMAIL_SERVER,
-      from: process.env.EMAIL_FROM,
-      maxAge: 60 * 30, // magic link valid 30 minutes
-      sendVerificationRequest: sendMagicLink,
-    }),
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    CredentialsProvider({
-      id: "staff-credentials",
-      name: "Studio sign-in",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(creds) {
-        if (!creds?.email || !creds?.password) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: String(creds.email).toLowerCase() },
-        });
-        if (!user || !user.passwordHash) return null;
-        if (user.role === "CUSTOMER") return null; // staff only
-        const ok = await argon2.verify(user.passwordHash, String(creds.password));
-        if (!ok) return null;
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-          role: user.role,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.uid = (user as any).id;
-        token.role = (user as any).role;
-      } else if (token.uid && !token.role) {
-        const u = await prisma.user.findUnique({ where: { id: token.uid as string }, select: { role: true } });
-        if (u) token.role = u.role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.uid as string;
-        (session.user as any).role = (token.role as Role) ?? "CUSTOMER";
-      }
-      return session;
-    },
-  },
-  events: {
-    async createUser() {
-      // Newly-created accounts default to CUSTOMER (Prisma schema handles this).
-      // Hook left here for future analytics / welcome-email kick-off.
-    },
-  },
+export type AppUser = {
+  id: string;
+  email: string;
+  name?: string | null;
+  image?: string | null;
+  role: Role;
 };
 
-/** Convenience: read the current session from a server component / route handler. */
-export const auth = () => getServerSession(authOptions);
+export type AppSession = { user: AppUser };
+
+/**
+ * Resolve the Clerk session to the application's user and role record.
+ * The email fallback links a pre-existing Prisma record on first Clerk sign-in.
+ */
+export async function auth(): Promise<AppSession | null> {
+  const { userId } = await clerkAuth();
+  if (!userId) return null;
+
+  const clerkUser = await currentUser();
+  const email = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase();
+  if (!email) throw new Error("The signed-in Clerk user has no primary email address.");
+
+  const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
+  const image = clerkUser.imageUrl || null;
+  const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: { email, name, image },
+      })
+    : await prisma.user.upsert({
+        where: { email },
+        update: { clerkUserId: userId, name, image },
+        create: { clerkUserId: userId, email, name, image },
+      });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      image: user.image,
+      role: user.role,
+    },
+  };
+}

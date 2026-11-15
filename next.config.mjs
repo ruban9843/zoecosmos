@@ -3,8 +3,8 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-      // S3 / MinIO (local dev)
-      { protocol: "http",  hostname: "localhost", port: "9000" },
+      // Supabase Storage
+      { protocol: "https", hostname: "*.supabase.co" },
       // Cloudflare R2
       { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
       // AWS S3

@@ -1,13 +1,12 @@
 "use client";
-import { SessionProvider } from "next-auth/react";
 import CartBoot from "../hooks/CartBoot";
 
-/** Top-level client providers (wraps NextAuth session + cart bootstrap). */
+/** Top-level client providers. ClerkProvider is mounted in the root layout. */
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <>
       <CartBoot />
       {children}
-    </SessionProvider>
+    </>
   );
 }

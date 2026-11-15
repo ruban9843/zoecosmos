@@ -7,7 +7,7 @@ const fmt = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
 export default async function AccountPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login?callbackUrl=/account");
+  if (!session?.user) redirect("/sign-in?redirect_url=/account");
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -19,7 +19,7 @@ export default async function AccountPage() {
       },
     },
   });
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   return (
     <main className="px-6 md:px-12 py-16 max-w-3xl mx-auto">

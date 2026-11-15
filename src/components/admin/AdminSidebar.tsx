@@ -2,9 +2,9 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
 import FlowerShopMark from "../FlowerShopMark";
-import { signOut } from "next-auth/react";
-import type { Session } from "next-auth";
+import type { AppUser } from "../../lib/auth";
 import { useUIStore } from "../../hooks/useUIStore";
 
 const items = [
@@ -30,7 +30,8 @@ const ICONS: Record<string, React.ReactNode> = {
   settings:   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4 4l1.5 1.5M14.5 14.5L16 16M4 16l1.5-1.5M14.5 5.5L16 4"/></svg>,
 };
 
-export default function AdminSidebar({ user }: { user: Session["user"] }) {
+export default function AdminSidebar({ user }: { user: AppUser }) {
+  const { signOut } = useClerk();
   const path = usePathname();
   const isActive = (href: string) => href === "/admin" ? path === "/admin" : path.startsWith(href);
   const initials = (user.name || user.email).split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -78,7 +79,7 @@ export default function AdminSidebar({ user }: { user: Session["user"] }) {
           <div className="ad-sidebar-user-name">{user.name || user.email}</div>
           <div className="ad-sidebar-user-role">{user.role.toLowerCase()}</div>
         </div>
-        <button className="ad-sidebar-signout" onClick={() => signOut({ callbackUrl: "/" })} aria-label="Sign out" title="Sign out">
+        <button className="ad-sidebar-signout" onClick={() => signOut({ redirectUrl: "/" })} aria-label="Sign out" title="Sign out">
           <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 4H4v12h4M13 6l4 4-4 4M17 10H8"/></svg>
         </button>
       </div>

@@ -8,6 +8,7 @@ type Params = { params: Promise<{ id: string }> };
 
 const createSchema = z.object({
   url: z.string().url(),
+  objectKey: z.string().min(1).max(512).optional(),
   alt: z.string().max(200).optional(),
 });
 
@@ -24,6 +25,7 @@ export const POST = route(async (req: Request, { params }: Params) => {
   const image = await prisma.productImage.create({
     data: {
       productId: id,
+      objectKey: data.objectKey,
       url: data.url,
       alt: data.alt,
       sortOrder: count,

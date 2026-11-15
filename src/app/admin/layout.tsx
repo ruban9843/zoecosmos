@@ -1,4 +1,4 @@
-/** Server-only admin layout — checks the session, redirects non-staff. */
+/** Server-only admin layout — checks the Clerk-backed application role. */
 import { redirect } from "next/navigation";
 import { auth } from "../../lib/auth";
 import AdminSidebar from "../../components/admin/AdminSidebar";
@@ -13,7 +13,7 @@ export const metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user || (session.user.role !== "STAFF" && session.user.role !== "OWNER")) {
-    redirect("/login?callbackUrl=/admin");
+    redirect("/sign-in?redirect_url=/admin");
   }
 
   return (

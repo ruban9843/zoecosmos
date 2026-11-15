@@ -2,7 +2,7 @@
 
 # 🌸 Flower Shop · v2
 
-**A self-owned florist storefront — Next.js, Postgres, Prisma, NextAuth, and an admin panel that doesn't pay rent to anyone.**
+**A self-owned florist storefront — Next.js, Postgres, Prisma, Clerk, and an admin panel that doesn't pay rent to anyone.**
 
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-000?logo=next.js&logoColor=white)
@@ -10,7 +10,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Postgres](https://img.shields.io/badge/Postgres-16-336791?logo=postgresql&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma&logoColor=white)
-![NextAuth](https://img.shields.io/badge/Auth.js-NextAuth-1B7CFF)
+![Clerk](https://img.shields.io/badge/Auth-Clerk-6C47FF)
 [![CI](https://github.com/Embox99/flower_shop/actions/workflows/ci.yml/badge.svg)](https://github.com/Embox99/flower_shop/actions/workflows/ci.yml)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
@@ -26,8 +26,8 @@ v1 was a redesign on top of **Wix Headless**. v2 brings the backend home:
 |---|---|---|
 | Products & cart | Wix Stores SDK | **Postgres** via Prisma |
 | Cart & checkout | Wix `currentCart` + Wix redirect | **Own** anon-cart cookie + REST API |
-| Auth | Wix OAuth visitor / member | **NextAuth** (magic links + Google + staff credentials) |
-| Storage | Wix Media | **S3-compatible** (MinIO in dev, R2/S3 in prod) |
+| Auth | Wix OAuth visitor / member | **Clerk** (sign-in, sign-up, and sessions) |
+| Storage | Wix Media | **S3-compatible** (Supabase Storage) |
 | Admin | Wix dashboard | **Custom** admin under `/admin` |
 | Payments | Wix-hosted | Mocked — staff marks PAID in admin |
 
@@ -44,7 +44,7 @@ v1 was a redesign on top of **Wix Headless**. v2 brings the backend home:
 - **Fast by default.** Server components read the catalogue straight from Postgres through one cached data layer (`unstable_cache` + tag revalidation), so pages never round-trip through their own API. The home page is statically prerendered with ISR.
 - **Mobile-first storefront.** Responsive down to 360px: bottom-sheet filters, sticky add-to-basket bar, touch-friendly quick add, no iOS input zoom.
 - **Real commerce plumbing.** Server-side pricing, atomic stock decrement in a transaction, guest and signed-in carts that merge on sign-in, owner-editable delivery fees.
-- **Secure where it matters.** Redis rate limiting on cart, checkout, magic links and order lookup; order details only visible to their owner or the browser that placed them; drafts never leak through public endpoints.
+- **Secure where it matters.** Redis rate limiting on cart, checkout and order lookup; order details only visible to their owner or the browser that placed them; drafts never leak through public endpoints.
 - **SEO ready.** Per-product metadata, Open Graph, schema.org `Product` JSON-LD, `sitemap.xml` and `robots.txt`.
 - **Accessible.** Focus-visible rings, skip link, Escape-to-close dialogs with scroll lock, `prefers-reduced-motion` support.
 - **A real admin.** Dashboard, order pipeline, drag-and-drop delivery board, product editor with S3 uploads, customers and subscriptions — usable on a phone too, with a slide-out sidebar.
@@ -54,20 +54,20 @@ v1 was a redesign on top of **Wix Headless**. v2 brings the backend home:
 - **Next.js 15** App Router · server components, route handlers
 - **TypeScript** end-to-end (including Prisma migrations & seeds)
 - **PostgreSQL 16** + **Prisma 5** schema-first
-- **NextAuth (Auth.js)** with three providers:
-  - `EmailProvider` — magic links (customers)
-  - `staff-credentials` — argon2 + JWT (staff/owner)
-  - `GoogleProvider` — optional
+- **Clerk** for sign-in, sign-up, sessions, and authentication email
 - **Zod** for request validation
 - **Zustand** for client cart + UI store
-- **S3 / R2 / MinIO** for product photos via signed PUT URLs
+- **Supabase Storage** for product photos via signed PUT URLs
 - **Vitest** for unit tests · **Playwright** for E2E
 
 ## Quick start
 
+Cloud deployment guidance is in [`docs/deployment.md`](./docs/deployment.md).
+The application uses hosted services and does not require Docker.
+
 ### Prerequisites
 - **Node.js 18.17+**
-- **Docker** (or your own Postgres + Redis + S3-compatible storage)
+- Hosted PostgreSQL, Redis, S3-compatible storage, and a Clerk instance
 
 ### 1. Install
 ```bash
@@ -76,18 +76,11 @@ cd flower_shop
 npm install
 ```
 
-### 2. Boot the dev services
-```bash
-npm run docker:up
-```
-This brings up four containers:
+### 2. Configure hosted services
 
-| Service | Port | What it is |
-|---|---|---|
-| Postgres | 5433 | Primary database |
-| Redis | 6379 | Rate limiting (optional — fails open) |
-| MinIO | 9000 (API), 9001 (console) | S3-compatible image storage |
-| Mailhog | 1025 (SMTP), 8025 (web) | Catches magic-link emails |
+Create a Supabase project with PostgreSQL and a **public** Storage bucket named
+`uploads`. Create an Upstash Redis database and an SMTP account with Brevo,
+Resend, or Gmail. Copy their credentials into `env.example`.
 
 ### 3. Configure environment
 ```bash
@@ -97,6 +90,9 @@ cp env.example .env
 # generate a secret and paste it into NEXTAUTH_SECRET in .env.local:
 openssl rand -base64 32
 ```
+
+`env.example` is the cloud/Vercel template. Use separate Supabase, Upstash,
+storage, and SMTP credentials for development, preview, and production.
 
 ### 4. Schema + seed
 ```bash
@@ -118,9 +114,7 @@ npm run dev
 |---|---|
 | http://localhost:3000 | Storefront |
 | http://localhost:3000/admin | Admin (sign in as the owner) |
-| http://localhost:3000/login | Customer sign-in (magic link via Mailhog) |
-| http://localhost:8025 | Mailhog — opens the magic link emails |
-| http://localhost:9001 | MinIO console (login `minio` / `miniominio`) |
+| http://localhost:3000/login | Customer sign-in (magic link via hosted SMTP) |
 | http://localhost:5555 | `npm run db:studio` — Prisma Studio (DB browser) |
 
 **Default owner login** (set in `.env.local`):
@@ -188,7 +182,7 @@ All endpoints validate input via Zod and return JSON with appropriate status cod
 
 ## Authentication & roles
 
-- **Customers** use *email magic links* — perfect for "I want to track my order" without remembering a password. The link is sent through whatever SMTP server you point `EMAIL_SERVER` at (Mailhog in dev).
+- **Customers** use *email magic links* — perfect for "I want to track my order" without remembering a password. The link is sent through the hosted SMTP server configured in `EMAIL_SERVER`.
 - **Staff & owners** use *email + password* via the `staff-credentials` provider (argon2 hashes).
 - **Google OAuth** is available if you set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 - Roles ship through the JWT and land on `session.user.role`.
@@ -202,11 +196,13 @@ update "User" set role = 'STAFF' where email = 'naama@flower-shop.local';
 
 ## Images
 
-In dev, MinIO acts as a local S3 — the bucket is auto-created at boot. To upload from the admin, the browser calls `POST /api/admin/upload-url`, then PUTs the file straight to MinIO; only the public URL gets stored in the database.
+To upload from the admin, the browser calls `POST /api/admin/upload-url`, then
+PUTs the file directly to Supabase Storage; only the public URL gets stored in
+the database.
 
 For production:
-- **Cloudflare R2** — fast, S3-compatible, no egress fees. Set `S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com`.
-- **AWS S3** — drop the `S3_ENDPOINT` env var and the AWS SDK picks the right region URL.
+- **Supabase Storage** — use the S3 endpoint, credentials, and public object URL
+  from the project. See [`docs/storage-migration.md`](./docs/storage-migration.md).
 
 ## Tests
 
