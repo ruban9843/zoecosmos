@@ -40,13 +40,13 @@ const description =
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
   title: {
-    default: "Flower Shop — hand-tied in Tel Aviv",
-    template: "%s · Flower Shop",
+    default: "Zoecomsos — hand-tied flowers",
+    template: "%s · Zoecomsos",
   },
   description,
   openGraph: {
-    siteName: "Flower Shop",
-    title: "Flower Shop — hand-tied in Tel Aviv",
+    siteName: "Zoecomsos",
+    title: "Zoecomsos — hand-tied flowers",
     description,
     type: "website",
     images: ["/images/main_preview.png"],
