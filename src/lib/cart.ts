@@ -127,7 +127,7 @@ async function deliveryConfig() {
  * Compute totals from a cart's line items. Single source of pricing truth — never
  * trust the client.
  */
-export async function priceCart(cartId: string, delivery: DeliveryOption = "today") {
+export async function priceCart(cartId: string, delivery: DeliveryOption = "date") {
   const all = await prisma.cartItem.findMany({
     where: { cartId },
     include: { product: true, variant: true },

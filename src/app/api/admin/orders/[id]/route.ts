@@ -3,6 +3,7 @@ import { OrderStatus, PaymentStatus, OrderEventKind } from "@prisma/client";
 import { prisma } from "../../../../../lib/prisma";
 import { json, route, bad, readBody } from "../../../../../lib/api";
 import { requireStaff } from "../../../../../lib/auth-helpers";
+import { notifyOrderStatus } from "../../../../../lib/order-notifications";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -98,5 +99,8 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
   });
 
   const updated = await findOrder(order.id);
+  if (updated && data.status && updated.status === data.status) {
+    await notifyOrderStatus(updated, order.status);
+  }
   return json(updated);
 });

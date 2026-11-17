@@ -66,7 +66,7 @@ export default async function CustomerOrderDetail({
           <div className="text-sm">{order.deliveryWindow || "—"}</div>
           {order.deliveryDate && (
             <div className="text-sm text-ink-soft mt-1">
-              {new Date(order.deliveryDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+              {new Date(order.deliveryDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}
             </div>
           )}
           {(order.addressLine1 || order.city) && (

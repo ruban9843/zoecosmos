@@ -181,6 +181,7 @@ export default async function AdminOrderDetail({
                     {new Date(order.deliveryDate).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
+                      timeZone: "UTC",
                     })}
                   </span>
                 )}
@@ -192,9 +193,9 @@ export default async function AdminOrderDetail({
             <h3>Customer</h3>
             <div style={{ fontSize: 13, lineHeight: 1.7 }}>
               <div style={{ fontWeight: 500 }}>
-                {order.user?.name || "Guest"}
+                {order.customerName || order.user?.name || "Guest"}
               </div>
-              <div>{order.user?.email || "no account"}</div>
+              <div>{order.contactEmail || order.user?.email || "no account"}</div>
               <div>{order.user?.phone || ""}</div>
             </div>
           </div>

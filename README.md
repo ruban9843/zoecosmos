@@ -162,7 +162,7 @@ password: studio
 - `POST  /api/admin/upload-url` — signed S3 PUT URL for product photography
 
 ### Auth
-- `GET/POST /api/auth/*` — handled by NextAuth (sign-in, callback, sign-out, CSRF, providers)
+- Sign-in and sign-up are handled by Clerk.
 
 All endpoints validate input via Zod and return JSON with appropriate status codes.
 
@@ -182,11 +182,10 @@ All endpoints validate input via Zod and return JSON with appropriate status cod
 
 ## Authentication & roles
 
-- **Customers** use *email magic links* — perfect for "I want to track my order" without remembering a password. The link is sent through the hosted SMTP server configured in `EMAIL_SERVER`.
-- **Staff & owners** use *email + password* via the `staff-credentials` provider (argon2 hashes).
-- **Google OAuth** is available if you set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
-- Roles ship through the JWT and land on `session.user.role`.
-- `/admin/*` and `/account/*` are gated by `src/middleware.ts`.
+- Clerk handles customer and staff authentication; application roles are resolved server-side.
+- `OWNER_EMAIL` identifies the owner. `ADMIN_EMAIL` grants staff access to a verified Clerk primary email, without owner-only settings access.
+- Order emails use OpenMail. See [email configuration](docs/email-configuration.md) for setup and delivery limitations.
+- Apply Prisma migrations before deploying checkout changes.
 
 To promote a customer to staff:
 ```sql

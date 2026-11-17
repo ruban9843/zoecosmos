@@ -14,3 +14,7 @@ Existing password hashes, NextAuth sessions, OAuth accounts, and verification
 tokens are not migrated. Existing users must create or sign in to a Clerk
 account. The seeded owner email identifies the owner role record; use that email
 for the Clerk account.
+
+Set `ADMIN_EMAIL` to grant staff access to that verified Clerk primary email.
+This derived access does not grant owner-only settings and is removed when the
+setting changes. Separately assigned database staff roles remain unchanged.

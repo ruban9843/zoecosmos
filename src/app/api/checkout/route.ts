@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { prisma } from "../../../lib/prisma";
 import { auth } from "../../../lib/auth";
 import { json, route, bad, readBody, HttpError } from "../../../lib/api";
@@ -7,37 +6,9 @@ import { enforceRateLimit } from "../../../lib/rate-limit";
 import { cookies } from "next/headers";
 import { rememberOrder } from "../../../lib/orders";
 import { invalidateCatalog } from "../../../lib/catalog";
-import { DELIVERY_OPTIONS, lineProblem } from "../../../lib/pricing";
-
-const schema = z.object({
-  recipientName: z.string().min(1, "Required"),
-  recipientPhone: z.string().min(4),
-  addressLine1: z.string().min(1, "Required"),
-  addressLine2: z.string().optional(),
-  city: z.string().min(1),
-  zip: z.string().optional(),
-  country: z.string().default("IL"),
-
-  // The fee is derived from this on the server; the client never sends a price.
-  delivery: z.enum(DELIVERY_OPTIONS).default("today"),
-  deliveryWindow: z.string().min(1),
-  deliveryDate: z.string().datetime().optional(),
-
-  giftMessage: z.string().max(160).optional(),
-
-  // Optional — capture an email for guest checkout. If signed in we use the
-  // session email instead.
-  email: z.string().email().optional(),
-  name:  z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.delivery === "date" && !data.deliveryDate) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["deliveryDate"],
-      message: "A delivery date is required",
-    });
-  }
-});
+import { lineProblem } from "../../../lib/pricing";
+import { checkoutSchema } from "../../../lib/checkout-validation";
+import { notifyNewOrder } from "../../../lib/order-notifications";
 
 /** Order code generator: FS-XXXXX, retry on collision. */
 async function uniqueCode(): Promise<string> {
@@ -62,7 +33,7 @@ export const POST = route(async (req: Request) => {
   // Throttle checkout to curb order flooding / card-testing-style abuse.
   await enforceRateLimit(req, "checkout", { limit: 10, windowSec: 60 });
 
-  const data = await readBody(req, schema);
+  const data = await readBody(req, checkoutSchema);
   const cart = await getOrCreateCart();
   const priced = await priceCart(cart.id, data.delivery);
   if (priced.lines.length === 0) return bad("Cart is empty", 400);
@@ -127,15 +98,17 @@ export const POST = route(async (req: Request) => {
         deliveryFee: priced.deliveryFee,
         total: priced.total,
         currency: priced.currency,
-        recipientName: data.recipientName,
+        contactEmail: data.email.toLowerCase(),
+        customerName: data.name,
+        recipientName: data.recipientName || data.name,
         recipientPhone: data.recipientPhone,
         addressLine1: data.addressLine1,
         addressLine2: data.addressLine2,
         city: data.city,
         zip: data.zip,
         country: data.country,
-        deliveryWindow: data.deliveryWindow,
-        deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : null,
+        deliveryWindow: "Scheduled delivery",
+        deliveryDate: new Date(`${data.deliveryDate}T00:00:00.000Z`),
         giftMessage: data.giftMessage,
         items: {
           create: priced.lines.map((l) => ({
@@ -173,5 +146,6 @@ export const POST = route(async (req: Request) => {
     // Anon cart record stays (debugging / re-attribution); not user-visible.
   }
 
+  await notifyNewOrder(order);
   return json({ code: order.code, id: order.id, total: order.total });
 });

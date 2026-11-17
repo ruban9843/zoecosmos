@@ -237,6 +237,9 @@ model Order {
   total           Int
   currency        String        @default("USD")
 
+  contactEmail    String?
+  customerName    String?
+
   // Delivery
   deliveryWindow  String?       // "12 – 3pm", "Pick up", "Letterbox"
   deliveryDate    DateTime?

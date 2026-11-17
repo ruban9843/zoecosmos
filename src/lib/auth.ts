@@ -1,6 +1,7 @@
 import { auth as clerkAuth, currentUser } from "@clerk/nextjs/server";
 import type { Role } from "@prisma/client";
 import { prisma } from "./prisma";
+import { resolveRole } from "./roles";
 
 export type AppUser = {
   id: string;
@@ -37,15 +38,13 @@ export async function auth(): Promise<AppSession | null> {
         update: { clerkUserId: userId, name, image },
         create: { clerkUserId: userId, email, name, image },
       });
-  const configuredOwnerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
-  const role =
-    configuredOwnerEmail
-      ? email === configuredOwnerEmail
-        ? "OWNER"
-        : user.role === "OWNER"
-          ? "CUSTOMER"
-          : user.role
-      : user.role;
+  const role = resolveRole(
+    email,
+    user.role,
+    clerkUser.primaryEmailAddress?.verification?.status === "verified",
+    process.env.OWNER_EMAIL,
+    process.env.ADMIN_EMAIL,
+  );
 
   return {
     user: {

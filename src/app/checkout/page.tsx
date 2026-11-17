@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "../../hooks/useCartStore";
 import BouquetIllustration from "../../components/BouquetIllustration";
 import { formatMoney } from "../../lib/currency";
+import { deliveryDateBounds, validDeliveryDate } from "../../lib/delivery-date";
+import { checkoutDetailsSchema } from "../../lib/checkout-validation";
 
 const fmt = formatMoney;
 
@@ -21,19 +23,18 @@ export default function CheckoutPage() {
   const clear = useCartStore((s) => s.clear);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [delivery, setDelivery] = useState("today");
   const [deliveryDate, setDeliveryDate] = useState("");
-  // Fees come from the server per method; the order is charged the same way.
-  const deliveryFee = deliveryOptions[delivery] ?? defaultFee;
+  const deliveryFee = deliveryOptions.date ?? defaultFee;
   const total = subtotal + deliveryFee;
-  const feeLabel = (id: string) => (deliveryOptions[id] ? fmt(deliveryOptions[id]) : "free");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const dateBounds = deliveryDateBounds();
 
   const [form, setForm] = useState({
     email: "", name: "", phone: "",
     recipient: "",
-    addressLine1: "", addressLine2: "", city: "Tel Aviv", zip: "",
+    addressLine1: "", addressLine2: "", city: "", zip: "",
     giftMessage: "",
   });
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -66,6 +67,31 @@ export default function CheckoutPage() {
     }));
   }
 
+  function continueToDetails() {
+    if (!validDeliveryDate(deliveryDate)) {
+      setError("Choose a delivery date between tomorrow and 30 days from now.");
+      return;
+    }
+    setError(null);
+    setStep(2);
+  }
+
+  function continueToReview() {
+    const result = checkoutDetailsSchema.safeParse({
+      ...form,
+      recipientPhone: form.phone,
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      for (const issue of result.error.issues) errors[String(issue.path[0])] = issue.message;
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
+    setError(null);
+    setStep(3);
+  }
+
   if (lines.length === 0) {
     return (
       <main className="fs-checkout fs-checkout--empty">
@@ -80,9 +106,7 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError(null);
     try {
-      if (delivery === "date" && !deliveryDate) {
-        throw new Error("Please choose a delivery date");
-      }
+      if (!validDeliveryDate(deliveryDate)) throw new Error("Please choose a valid delivery date");
       const res = await fetch("/api/checkout", {
         method: "POST",
         credentials: "include",
@@ -93,16 +117,13 @@ export default function CheckoutPage() {
           addressLine1: form.addressLine1,
           addressLine2: form.addressLine2 || undefined,
           city: form.city,
-          zip: form.zip || undefined,
+          zip: form.zip,
           country: "IL",
-          delivery,
-          deliveryWindow: deliveryLabel(delivery),
-          deliveryDate: delivery === "date"
-            ? new Date(`${deliveryDate}T00:00:00.000Z`).toISOString()
-            : undefined,
+          delivery: "date",
+          deliveryDate,
           giftMessage: form.giftMessage || undefined,
-          email: form.email || undefined,
-          name: form.name || undefined,
+          email: form.email,
+          name: form.name,
         }),
       });
       if (!res.ok) {
@@ -140,38 +161,15 @@ export default function CheckoutPage() {
         <div className="fs-checkout-form">
           {step === 1 && (
             <section className="fs-form-section">
-              <h3>When and how</h3>
-              <div className="fs-deliv-options">
-                {[
-                  { id: "today",     t: "Today",            s: "Tel Aviv · before 6pm" },
-                  { id: "tomorrow",  t: "Tomorrow morning", s: "Choose 9–12 or 12–3" },
-                  { id: "date",      t: "Pick a date",      s: "Up to 30 days out" },
-                  { id: "letterbox", t: "Letterbox",        s: "2–3 days, UK & EU" },
-                  { id: "pickup",    t: "Pick up at the shop", s: "Florentin 22 · today after 4pm" },
-                ].map((d) => ({ ...d, p: feeLabel(d.id) })).map((d) => (
-                  <label key={d.id} className={"fs-deliv-opt" + (delivery === d.id ? " fs-deliv-opt--on" : "")}>
-                    <input type="radio" name="deliv" checked={delivery === d.id} onChange={() => setDelivery(d.id)} />
-                    <div>
-                      <div className="fs-deliv-opt-row"><b>{d.t}</b><span>{d.p}</span></div>
-                      <span>{d.s}</span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              {delivery === "date" && (
-                <label style={{ display: "block", marginBottom: 16 }}>
-                  <span>Delivery date</span>
-                  <input
-                    type="date"
-                    value={deliveryDate}
-                    min={minDeliveryDate()}
-                    max={maxDeliveryDate()}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                    required
-                  />
-                </label>
-              )}
-              <button className="fs-btn fs-btn--dark fs-btn--block" onClick={() => setStep(2)}>
+              <h3>Delivery date</h3>
+              <label style={{ display: "block", marginBottom: 16 }}>
+                <span>Pick a date</span>
+                <input type="date" value={deliveryDate} min={dateBounds.min} max={dateBounds.max}
+                  onChange={(e) => setDeliveryDate(e.target.value)} required aria-invalid={!!error} />
+              </label>
+              <p>We will contact you soon to confirm delivery and payment.</p>
+              {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+              <button className="fs-btn fs-btn--dark fs-btn--block" onClick={continueToDetails}>
                 Continue to details →
               </button>
             </section>
@@ -196,20 +194,21 @@ export default function CheckoutPage() {
                 </div>
               )}
               <div className="fs-form-grid">
-                <label><span>Your email</span><input value={form.email} onChange={set("email")} placeholder="for the receipt" /></label>
-                <label><span>Your name</span><input value={form.name} onChange={set("name")} placeholder="Anna" /></label>
-                <label><span>Phone</span><input value={form.phone} onChange={set("phone")} placeholder="+972…" /></label>
+                <label><span>Your email *</span><input type="email" required aria-invalid={!!fieldErrors.email} value={form.email} onChange={set("email")} placeholder="for the receipt" />{fieldErrors.email && <small role="alert">{fieldErrors.email}</small>}</label>
+                <label><span>Your name *</span><input required aria-invalid={!!fieldErrors.name} value={form.name} onChange={set("name")} placeholder="Anna" />{fieldErrors.name && <small role="alert">{fieldErrors.name}</small>}</label>
+                <label><span>Phone *</span><input type="tel" required aria-invalid={!!fieldErrors.recipientPhone} value={form.phone} onChange={set("phone")} placeholder="Phone number" />{fieldErrors.recipientPhone && <small role="alert">{fieldErrors.recipientPhone}</small>}</label>
                 <label><span>Recipient</span><input value={form.recipient} onChange={set("recipient")} placeholder="Same as me / their name" /></label>
-                <label className="fs-form-grid-wide"><span>Delivery address</span><input value={form.addressLine1} onChange={set("addressLine1")} placeholder="Street and number" /></label>
+                <label className="fs-form-grid-wide"><span>Delivery address *</span><input required aria-invalid={!!fieldErrors.addressLine1} value={form.addressLine1} onChange={set("addressLine1")} placeholder="Street and number" />{fieldErrors.addressLine1 && <small role="alert">{fieldErrors.addressLine1}</small>}</label>
                 <label><span>Apt / floor</span><input value={form.addressLine2} onChange={set("addressLine2")} /></label>
-                <label><span>City</span><input value={form.city} onChange={set("city")} /></label>
+                <label><span>City *</span><input required aria-invalid={!!fieldErrors.city} value={form.city} onChange={set("city")} />{fieldErrors.city && <small role="alert">{fieldErrors.city}</small>}</label>
+                <label><span>Postal code *</span><input required aria-invalid={!!fieldErrors.zip} value={form.zip} onChange={set("zip")} />{fieldErrors.zip && <small role="alert">{fieldErrors.zip}</small>}</label>
                 <label className="fs-form-grid-wide"><span>Card message <em>(handwritten in fountain pen)</em></span>
                   <textarea rows={3} maxLength={160} value={form.giftMessage} onChange={set("giftMessage")} />
                 </label>
               </div>
               <div className="fs-form-actions">
                 <button className="fs-btn fs-btn--ghost" onClick={() => setStep(1)}>← Back</button>
-                <button className="fs-btn fs-btn--dark" onClick={() => setStep(3)}>Review order →</button>
+                <button className="fs-btn fs-btn--dark" onClick={continueToReview}>Review order →</button>
               </div>
             </section>
           )}
@@ -222,8 +221,8 @@ export default function CheckoutPage() {
               </p>
               <div className="fs-form-grid">
                 <label><span>From</span><div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card">{form.name || "—"}<br/><small className="text-ink-mute">{form.email}</small></div></label>
-                <label><span>To</span><div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card">{form.recipient || form.name || "—"}<br/><small className="text-ink-mute">{form.addressLine1}, {form.city}</small></div></label>
-                <label><span>Delivery</span><div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card">{deliveryLabel(delivery)}</div></label>
+                <label><span>To</span><div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card">{form.recipient || form.name || "—"}<br/><small className="text-ink-mute">{form.addressLine1}, {form.city}, {form.zip}</small></div></label>
+                <label><span>Delivery</span><div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card">{deliveryDate}</div></label>
                 {form.giftMessage && (
                   <label className="fs-form-grid-wide"><span>Card</span>
                     <div className="border border-[var(--fs-line)] rounded-xl px-4 py-3 bg-bg-card font-serif italic">&ldquo;{form.giftMessage}&rdquo;</div>
@@ -272,31 +271,3 @@ export default function CheckoutPage() {
   );
 }
 
-function deliveryLabel(id: string) {
-  return ({
-    today: "Today · before 6pm",
-    tomorrow: "Tomorrow morning",
-    date: "Pick a date",
-    letterbox: "Letterbox · 2–3 days",
-    pickup: "Pick up at the shop",
-  } as Record<string, string>)[id] || id;
-}
-
-function dateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function minDeliveryDate() {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return dateInputValue(date);
-}
-
-function maxDeliveryDate() {
-  const date = new Date();
-  date.setDate(date.getDate() + 30);
-  return dateInputValue(date);
-}
