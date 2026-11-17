@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import FlowerShopMark from "./FlowerShopMark";
+import ZoecomsosMark from "./ZoecomsosMark";
 import NewsletterForm from "./NewsletterForm";
 
 export default function Footer() {
@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="fs-foot">
       <div className="fs-foot-top">
         <div className="fs-foot-brand">
-          <FlowerShopMark size={36} />
+          <ZoecomsosMark size={36} />
           <p className="fs-foot-blurb">
             A small flower shop in Florentin, Tel Aviv.
             <br />
@@ -69,7 +69,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="fs-foot-bottom">
-        <span>© 2026 Flower Shop. Made with stems and sunlight.</span>
+        <span>© 2026 Zoecomsos. Made with stems and sunlight.</span>
         <span>Florentin 22 · Tel Aviv</span>
         <span>EN · INR</span>
       </div>

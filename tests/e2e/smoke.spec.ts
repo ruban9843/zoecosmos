@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test("storefront loads and navigates", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Flower Shop" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Zoecomsos" }).first()).toBeVisible();
 
   // Click the hero CTA into the catalogue.
   const shopLink = page.getByRole("link", { name: /today's flowers/i });

@@ -16,7 +16,7 @@ const PETALS = Array.from({ length: 12 }, (_, i) => {
   return { x, y, rotate };
 });
 
-const FlowerShopMark: React.FC<Props> = ({ size = 32, color = "currentColor" }) => {
+const ZoecomsosMark: React.FC<Props> = ({ size = 32, color = "currentColor" }) => {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
       <g fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round">
@@ -46,4 +46,4 @@ const FlowerShopMark: React.FC<Props> = ({ size = 32, color = "currentColor" }) 
   );
 };
 
-export default FlowerShopMark;
+export default ZoecomsosMark;

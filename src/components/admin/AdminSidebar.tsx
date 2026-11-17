@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
-import FlowerShopMark from "../FlowerShopMark";
+import ZoecomsosMark from "../ZoecomsosMark";
 import type { AppUser } from "../../lib/auth";
 import { useUIStore } from "../../hooks/useUIStore";
 
@@ -53,8 +53,8 @@ export default function AdminSidebar({ user }: { user: AppUser }) {
     {open && <div className="ad-sidebar-scrim" onClick={() => setOpen(false)} />}
     <aside id="ad-sidebar" className={"ad-sidebar" + (open ? " ad-sidebar--open" : "")}>
       <div className="ad-sidebar-brand">
-        <FlowerShopMark size={28} color="#f4ead8" />
-        <span className="ad-sidebar-brand-word">Flower Shop</span>
+        <ZoecomsosMark size={28} color="#f4ead8" />
+        <span className="ad-sidebar-brand-word">Zoecomsos</span>
         <span className="ad-sidebar-brand-sub">studio</span>
       </div>
       <nav className="ad-nav">

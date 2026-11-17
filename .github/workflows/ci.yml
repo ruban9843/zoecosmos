@@ -29,7 +29,7 @@ jobs:
       NEXTAUTH_SECRET: ci-only-secret
       NEXTAUTH_URL: http://localhost:3000
       APP_URL: http://localhost:3000
-      EMAIL_FROM: Flower Shop <ci@flower-shop.local>
+      EMAIL_FROM: Zoecomsos <ci@flower-shop.local>
       OWNER_EMAIL: owner@flower-shop.local
       OWNER_PASSWORD: ci-only-password
     steps:

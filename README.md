@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌸 Flower Shop · v2
+# 🌸 Zoecomsos · v2
 
 **A self-owned florist storefront — Next.js, Postgres, Prisma, Clerk, and an admin panel that doesn't pay rent to anyone.**
 

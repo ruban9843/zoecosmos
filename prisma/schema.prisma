@@ -1,4 +1,4 @@
-// Prisma schema for Flower Shop v2.
+// Prisma schema for Zoecomsos v2.
 // Models follow the admin design 1:1 (orders, products, variants, subscriptions, …).
 
 generator client {

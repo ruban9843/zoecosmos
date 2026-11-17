@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import FlowerShopMark from "./FlowerShopMark";
+import ZoecomsosMark from "./ZoecomsosMark";
 import NavIcons from "./NavIcons";
 import { formatMoney } from "../lib/currency";
 
@@ -95,8 +95,8 @@ export default function Navbar() {
         </button>
 
         <Link href="/" className="fs-logo">
-          <FlowerShopMark size={32} />
-          <span className="fs-logo-word">Flower&nbsp;Shop</span>
+          <ZoecomsosMark size={32} />
+          <span className="fs-logo-word">Zoecomsos</span>
         </Link>
 
         <nav className="fs-nav-links">
@@ -179,7 +179,7 @@ export default function Navbar() {
         <div className="fs-mobile-nav" onClick={() => setMobileNav(false)}>
           <div className="fs-mobile-nav-panel" onClick={(e) => e.stopPropagation()}>
             <div className="fs-mobile-nav-head">
-              <FlowerShopMark size={28} />
+              <ZoecomsosMark size={28} />
               <button className="fs-icon-btn" onClick={() => setMobileNav(false)} aria-label="Close">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M5 5l10 10M15 5L5 15" />
