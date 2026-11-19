@@ -29,3 +29,16 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
   invalidateCatalog();
   return json({ variant: updated });
 });
+
+/** DELETE /api/admin/products/[id]/variants/[variantId] — remove a variant; past orders keep their snapshot. */
+export const DELETE = route(async (_req: Request, { params }: Params) => {
+  await requireStaff();
+  const { id, variantId } = await params;
+
+  const variant = await prisma.productVariant.findFirst({ where: { id: variantId, productId: id } });
+  if (!variant) return bad("Variant not found", 404);
+
+  await prisma.productVariant.delete({ where: { id: variant.id } });
+  invalidateCatalog();
+  return json({ ok: true });
+});

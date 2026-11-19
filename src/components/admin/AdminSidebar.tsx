@@ -10,10 +10,11 @@ import { useUIStore } from "../../hooks/useUIStore";
 const items = [
   { href: "/admin",            label: "Dashboard",  icon: "dashboard" },
   { href: "/admin/orders",     label: "Orders",     icon: "orders"    },
-  { href: "/admin/deliveries", label: "Today's deliveries", icon: "deliveries" },
+  { href: "/admin/deliveries", label: "Deliveries", icon: "deliveries" },
   { section: "Catalog" },
   { href: "/admin/products",   label: "Products",   icon: "products"  },
   { section: "Commerce" },
+  { href: "/admin/merchants",  label: "Merchant stores", icon: "merchants" },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: "subs" },
   { href: "/admin/customers",  label: "Customers",  icon: "customers" },
   { section: "Analyse" },
@@ -26,6 +27,7 @@ const ICONS: Record<string, React.ReactNode> = {
   deliveries: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 7h10v8H2zM12 10h4l2 2v3h-6"/><circle cx="6" cy="16" r="1.5"/><circle cx="14" cy="16" r="1.5"/></svg>,
   products:   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7l7-4 7 4v6l-7 4-7-4V7Z"/><path d="M3 7l7 4 7-4M10 11v6"/></svg>,
   customers:  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="7" r="3"/><path d="M3 17a7 7 0 0 1 14 0"/></svg>,
+  merchants:  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 8l1.5-4h11L17 8M3 8h14M3 8v9h14V8M8 17v-5h4v5"/></svg>,
   subs:       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 10a7 7 0 0 1 12-5l1 1"/><path d="M16 4v3h-3"/><path d="M17 10a7 7 0 0 1-12 5l-1-1"/><path d="M4 16v-3h3"/></svg>,
   settings:   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="2.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4 4l1.5 1.5M14.5 14.5L16 16M4 16l1.5-1.5M14.5 5.5L16 4"/></svg>,
 };

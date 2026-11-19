@@ -8,9 +8,11 @@ import { useRouter } from "next/navigation";
 
 type Day = { open?: string; close?: string; on: boolean };
 type Hours = Record<string, Day>;
-type Delivery = { sameDayCutoff: string; lastSlot: string; windows: string[]; feeCents?: number; freeOverCents?: number };
+type Delivery = { sameDayCutoff: string; lastSlot: string; windows: string[]; feeCents?: number; freeOverCents?: number | null };
 
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const toRupees = (paise?: number | null) => (paise == null ? "" : String(paise / 100));
+const toPaise = (rupees: string) => Math.round(parseFloat(rupees) * 100);
 
 export default function SettingsForm({
   initialHours,
@@ -31,6 +33,8 @@ export default function SettingsForm({
     freeOverCents: initialDelivery.freeOverCents,
   });
   const [newWindow, setNewWindow] = useState("");
+  const [fee, setFee] = useState(toRupees(initialDelivery.feeCents));
+  const [freeOver, setFreeOver] = useState(toRupees(initialDelivery.freeOverCents));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
@@ -42,10 +46,18 @@ export default function SettingsForm({
     setBusy(true);
     setMsg(null);
     try {
+      const payload = {
+        ...delivery,
+        feeCents: fee.trim() === "" ? undefined : toPaise(fee),
+        freeOverCents: freeOver.trim() === "" ? null : toPaise(freeOver),
+      };
+      if ([payload.feeCents, payload.freeOverCents].some((v) => v != null && (!Number.isFinite(v) || v < 0))) {
+        throw new Error("Enter delivery amounts as positive rupee values.");
+      }
       const res = await fetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ hours, delivery }),
+        body: JSON.stringify({ hours, delivery: payload }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -118,29 +130,27 @@ export default function SettingsForm({
 
         <div className="ad-form-row-2" style={{ marginTop: 14 }}>
           <div className="ad-form-row" style={{ marginBottom: 0 }}>
-            <label>Delivery fee (cents)</label>
+            <label>Delivery charge (₹)</label>
             <input
               className="ad-input"
               type="number"
               min={0}
-              value={delivery.feeCents ?? ""}
+              step="1"
+              value={fee}
               placeholder="600"
-              onChange={(e) =>
-                setDelivery((d) => ({ ...d, feeCents: e.target.value === "" ? undefined : Number(e.target.value) }))
-              }
+              onChange={(e) => setFee(e.target.value)}
             />
           </div>
           <div className="ad-form-row" style={{ marginBottom: 0 }}>
-            <label>Free over (cents)</label>
+            <label>Free delivery over (₹, blank = never)</label>
             <input
               className="ad-input"
               type="number"
               min={0}
-              value={delivery.freeOverCents ?? ""}
+              step="1"
+              value={freeOver}
               placeholder="5000"
-              onChange={(e) =>
-                setDelivery((d) => ({ ...d, freeOverCents: e.target.value === "" ? undefined : Number(e.target.value) }))
-              }
+              onChange={(e) => setFreeOver(e.target.value)}
             />
           </div>
         </div>

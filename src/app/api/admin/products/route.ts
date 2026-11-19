@@ -45,16 +45,21 @@ const createSchema = z.object({
   height: z.string().optional(),
   vase:   z.string().optional(),
   status: z.enum(["ACTIVE","DRAFT","ARCHIVED"]).default("DRAFT"),
+  initialStock: z.number().int().min(0).max(100_000).default(0),
 });
 
-/** POST /api/admin/products — create a new product. */
+/** POST /api/admin/products — create a product plus a default "Standard" variant so it is sellable. */
 export const POST = route(async (req: Request) => {
   await requireStaff();
-  const data = await readBody(req, createSchema);
+  const { initialStock, ...data } = await readBody(req, createSchema);
   const product = await prisma.product.create({
     // zod's inferred type degrades under non-strict TS (all fields optional),
     // so Prisma's create union can't be satisfied without a cast.
-    data: { ...data, categoryId: data.categoryId ?? null } as any,
+    data: {
+      ...data,
+      categoryId: data.categoryId ?? null,
+      variants: { create: { label: "Standard", sku: `${data.sku}-STD`, stockQty: initialStock, sortOrder: 0 } },
+    } as any,
   });
   invalidateCatalog();
   return json({ product }, { status: 201 });

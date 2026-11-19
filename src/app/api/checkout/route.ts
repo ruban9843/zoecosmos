@@ -8,18 +8,10 @@ import { rememberOrder } from "../../../lib/orders";
 import { invalidateCatalog } from "../../../lib/catalog";
 import { lineProblem } from "../../../lib/pricing";
 import { checkoutSchema } from "../../../lib/checkout-validation";
-import { notifyNewOrder } from "../../../lib/order-notifications";
-
-/** Order code generator: FS-XXXXX, retry on collision. */
-async function uniqueCode(): Promise<string> {
-  for (let i = 0; i < 5; i++) {
-    const code = "FS-" + Math.floor(20000 + Math.random() * 80000);
-    const hit = await prisma.order.findUnique({ where: { code } });
-    if (!hit) return code;
-  }
-  // Fall back to timestamp-ish suffix.
-  return "FS-" + Date.now().toString().slice(-6);
-}
+import { newOrderEmails } from "../../../lib/order-notifications";
+import { enqueue, flushAfterResponse } from "../../../lib/notifications";
+import { payments } from "../../../lib/payments";
+import { uniqueOrderCode } from "../../../lib/order-code";
 
 /**
  * POST /api/checkout
@@ -34,21 +26,25 @@ export const POST = route(async (req: Request) => {
   await enforceRateLimit(req, "checkout", { limit: 10, windowSec: 60 });
 
   const data = await readBody(req, checkoutSchema);
-  const cart = await getOrCreateCart();
+  const session = await auth();
+  const cart = await getOrCreateCart(session);
   const priced = await priceCart(cart.id, data.delivery);
   if (priced.lines.length === 0) return bad("Cart is empty", 400);
 
   // Products can be archived or sell out after they were added to the cart.
   const items = await prisma.cartItem.findMany({
     where: { cartId: cart.id },
-    include: { product: true, variant: true },
+    include: {
+      product: { include: { images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 } } },
+      variant: true,
+    },
   });
   for (const it of items) {
     const problem = lineProblem(it.product, it.variant, it.qty);
     if (problem) return bad(`"${it.product.name}" is ${problem}`, 409);
   }
+  const imageByProduct = new Map(items.map((it) => [it.productId, it.product.images[0]?.url ?? null]));
 
-  const session = await auth();
   let userId = session?.user?.id || null;
 
   // Guest checkout: if no session but they gave an email, create a (or reuse) customer record.
@@ -60,7 +56,7 @@ export const POST = route(async (req: Request) => {
     userId = u.id;
   }
 
-  const code = await uniqueCode();
+  const code = await uniqueOrderCode();
 
   // Everything below is atomic: stock is decremented, the order is created, and
   // the cart is emptied as one unit. If stock runs out mid-flight the whole
@@ -116,6 +112,7 @@ export const POST = route(async (req: Request) => {
             variantId: l.variantId || null,
             productName: l.productName,
             variantLabel: l.variantLabel,
+            imageUrl: imageByProduct.get(l.productId) ?? null,
             unitPrice: l.unitPrice,
             qty: l.qty,
             total: l.total,
@@ -131,6 +128,7 @@ export const POST = route(async (req: Request) => {
     // Clear the cart items inside the transaction so a successful order always
     // leaves an empty cart (and a failed one leaves the cart intact for retry).
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    await enqueue(tx, created.id, newOrderEmails(created));
 
     return created;
   });
@@ -146,6 +144,11 @@ export const POST = route(async (req: Request) => {
     // Anon cart record stays (debugging / re-attribution); not user-visible.
   }
 
-  await notifyNewOrder(order);
-  return json({ code: order.code, id: order.id, total: order.total });
+  flushAfterResponse(order.id);
+
+  const payment = await payments.createPayment(order);
+  if (payment.ref) {
+    await prisma.order.update({ where: { id: order.id }, data: { paymentRef: payment.ref } });
+  }
+  return json({ code: order.code, id: order.id, total: order.total, redirectUrl: payment.redirectUrl });
 });

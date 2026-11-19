@@ -16,6 +16,10 @@ const labels: Record<string, [string, string]> = {
   PAID:             ["paid",      "ad-pill--paid"],
   PENDING:          ["pending",   "ad-pill--new"],
   REFUNDED:         ["refunded",  "ad-pill--canceled"],
+
+  SENT:             ["sent",      "ad-pill--paid"],
+  FAILED:           ["failed",    "ad-pill--canceled"],
+  INACTIVE:         ["inactive",  "ad-pill--draft"],
 };
 
 export default function StatusPill({ status }: { status: string }) {

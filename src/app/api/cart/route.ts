@@ -13,7 +13,7 @@ export const GET = route(async () => {
   const session = await auth();
   if (session?.user?.id) await mergeAnonCartIntoUserCart(session.user.id);
 
-  const cart = await getOrCreateCart();
+  const cart = await getOrCreateCart(session);
   const priced = await priceCart(cart.id);
   return json({ cartId: cart.id, ...priced });
 });

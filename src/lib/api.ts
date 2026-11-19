@@ -37,6 +37,10 @@ export function route<T extends (...args: any[]) => Promise<Response>>(handler: 
       if (e instanceof AuthError)  return bad(e.message, e.status);
       if (e instanceof HttpError)  return bad(e.message, e.status);
       if (e instanceof ZodError)   return bad("Invalid input", 422, { details: e.flatten() });
+      if (e?.code === "P2002") {
+        const fields = [e.meta?.target].flat().filter(Boolean).join(", ");
+        return bad(`${fields || "That value"} is already in use`, 409);
+      }
       console.error("API error:", e);
       return bad("Internal server error", 500);
     }

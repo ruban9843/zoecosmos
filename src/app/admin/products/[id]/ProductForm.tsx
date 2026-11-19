@@ -26,6 +26,7 @@ export default function ProductForm({ product, categories }: { product?: Product
     height: product?.height || "",
     vase:   product?.vase || "",
     status: product?.status || "DRAFT",
+    initialStock: "10",
   });
   const set = (k: keyof typeof form) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -34,11 +35,13 @@ export default function ProductForm({ product, categories }: { product?: Product
 
   const save = async () => {
     setSaving(true); setError("");
+    const { initialStock, ...rest } = form;
     const body = {
-      ...form,
+      ...rest,
       basePrice: Math.round(parseFloat(form.basePrice || "0") * 100),
       comparePrice: form.comparePrice ? Math.round(parseFloat(form.comparePrice) * 100) : null,
       palette: form.palette.split(",").map(s => s.trim()).filter(Boolean),
+      ...(isNew ? { initialStock: Math.max(0, Math.round(Number(initialStock) || 0)) } : {}),
     };
     const res = await fetch(
       isNew ? "/api/admin/products" : `/api/admin/products/${product.id}`,
@@ -60,11 +63,21 @@ export default function ProductForm({ product, categories }: { product?: Product
     }
   };
 
-  const remove = async () => {
-    if (!confirm("Archive this product? It will be hidden from the storefront.")) return;
-    setSaving(true);
-    await fetch(`/api/admin/products/${product.id}`, { method: "DELETE" });
+  const remove = async (hard: boolean) => {
+    const question = hard
+      ? `Permanently delete "${form.name}"? Its photos are removed and it disappears from carts. Past orders keep their copy. This can't be undone.`
+      : "Archive this product? It will be hidden from the storefront but can be restored by setting it Active.";
+    if (!confirm(question)) return;
+    setSaving(true); setError("");
+    const res = await fetch(`/api/admin/products/${product.id}${hard ? "?hard=1" : ""}`, { method: "DELETE" });
+    setSaving(false);
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      setError(e.error || (hard ? "Delete failed" : "Archive failed"));
+      return;
+    }
     router.push("/admin/products");
+    router.refresh();
   };
 
   return (
@@ -77,14 +90,15 @@ export default function ProductForm({ product, categories }: { product?: Product
         </div>
         <div className="ad-actions">
           <StatusPill status={form.status} />
-          {!isNew && <button className="ad-btn ad-btn--danger" onClick={remove} disabled={saving}>Archive</button>}
+          {!isNew && form.status !== "ARCHIVED" && <button className="ad-btn" onClick={() => remove(false)} disabled={saving}>Archive</button>}
+          {!isNew && <button className="ad-btn ad-btn--danger" onClick={() => remove(true)} disabled={saving}>Delete</button>}
           <button className="ad-btn ad-btn--dark" onClick={save} disabled={saving}>
             {saving ? "Saving…" : (isNew ? "Create" : "Save changes")}
           </button>
         </div>
       </div>
 
-      {error && <div style={{ background: "#fde9e6", color: "#8a3520", border: "1px solid #f0c6c0", padding: "10px 14px", borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
+      {error && <div className="ad-alert ad-alert--error">{error}</div>}
 
       <div className="ad-grid-2">
         <div>
@@ -141,9 +155,14 @@ export default function ProductForm({ product, categories }: { product?: Product
             </div>
           </div>
 
-          {!isNew && (
+          {isNew ? (
             <div className="ad-form-section">
               <h3>Photos</h3>
+              <p className="ad-hint">Create the product first — you can add photos right after.</p>
+            </div>
+          ) : (
+            <div className="ad-form-section">
+              <h3>Photos ({product.images.length})</h3>
               <ImagesEditor productId={product.id} images={product.images} />
             </div>
           )}
@@ -182,10 +201,19 @@ export default function ProductForm({ product, categories }: { product?: Product
             </div>
           </div>
 
-          {product?.variants?.length > 0 && (
+          {isNew ? (
+            <div className="ad-form-section">
+              <h3>Stock</h3>
+              <div className="ad-form-row">
+                <label>Starting stock (a &quot;Standard&quot; variant is created)</label>
+                <input type="number" min={0} step={1} value={form.initialStock} onChange={set("initialStock")} />
+              </div>
+              <p className="ad-hint">Add more sizes or options after creating the product.</p>
+            </div>
+          ) : (
             <div className="ad-form-section">
               <h3>Variants ({product.variants.length})</h3>
-              <VariantsEditor productId={product.id} variants={product.variants} />
+              <VariantsEditor productId={product.id} productSku={product.sku} variants={product.variants} />
             </div>
           )}
         </div>

@@ -6,16 +6,46 @@ import ClickableRow from "../../../components/admin/ClickableRow";
 import { formatMoney } from "../../../lib/currency";
 
 const fmt = formatMoney;
+const PAGE_SIZE = 50;
+const FILTERS = [
+  { key: "live", label: "Active & draft" },
+  { key: "ACTIVE", label: "Active" },
+  { key: "DRAFT", label: "Draft" },
+  { key: "ARCHIVED", label: "Archived" },
+  { key: "all", label: "All" },
+] as const;
 
-export default async function AdminProducts() {
-  const products = await prisma.product.findMany({
-    orderBy: { updatedAt: "desc" },
-    include: {
-      category: true,
-      _count: { select: { variants: true, orderItems: true } },
-      variants: { select: { stockQty: true } },
-    },
-  });
+export default async function AdminProducts({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; page?: string }>;
+}) {
+  const sp = await searchParams;
+  const filter = FILTERS.some((f) => f.key === sp.status) ? sp.status! : "live";
+  const page = Math.max(1, parseInt(sp.page || "1") || 1);
+  const where =
+    filter === "all" ? {} :
+    filter === "live" ? { status: { not: "ARCHIVED" as const } } :
+    { status: filter as "ACTIVE" | "DRAFT" | "ARCHIVED" };
+
+  const [products, total, counts] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        category: true,
+        _count: { select: { variants: true, orderItems: true } },
+        variants: { select: { stockQty: true } },
+        images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1, select: { url: true } },
+      },
+    }),
+    prisma.product.count({ where }),
+    prisma.product.groupBy({ by: ["status"], _count: true }),
+  ]);
+  const countOf = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="ad-page">
@@ -24,9 +54,7 @@ export default async function AdminProducts() {
           <span className="ad-eyebrow">Catalog</span>
           <h1 className="ad-h1">Products</h1>
           <p className="ad-h1-sub">
-            {products.filter((p) => p.status === "ACTIVE").length} live ·{" "}
-            {products.filter((p) => p.status === "DRAFT").length} draft ·{" "}
-            {products.filter((p) => p.status === "ARCHIVED").length} archived
+            {countOf("ACTIVE")} live · {countOf("DRAFT")} draft · {countOf("ARCHIVED")} archived
           </p>
         </div>
         <div className="ad-actions">
@@ -34,6 +62,20 @@ export default async function AdminProducts() {
             + New product
           </Link>
         </div>
+      </div>
+
+      <div className="ad-tabs" role="tablist" aria-label="Filter products">
+        {FILTERS.map((f) => (
+          <Link
+            key={f.key}
+            href={`/admin/products?status=${f.key}`}
+            role="tab"
+            aria-selected={filter === f.key}
+            className={"ad-tab" + (filter === f.key ? " ad-tab--on" : "")}
+          >
+            {f.label}
+          </Link>
+        ))}
       </div>
 
       <div className="ad-table-wrap">
@@ -68,9 +110,15 @@ export default async function AdminProducts() {
                           height: 46,
                           borderRadius: 6,
                           flexShrink: 0,
+                          overflow: "hidden",
                           background: `linear-gradient(135deg, ${palette[0] || "#eee"}55, ${palette[2] || "#ccc"}33)`,
                         }}
-                      />
+                      >
+                        {p.images[0]?.url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.images[0].url} alt="" width={36} height={46} loading="lazy" style={{ width: 36, height: 46, objectFit: "cover", display: "block" }} />
+                        )}
+                      </div>
                       <span
                         style={{
                           fontFamily: "var(--font-serif), serif",
@@ -123,6 +171,14 @@ export default async function AdminProducts() {
           </tbody>
         </table>
       </div>
+      {products.length === 0 && <p className="ad-hint" style={{ padding: 16 }}>No products in this view.</p>}
+      {pages > 1 && (
+        <div className="ad-pager">
+          {page > 1 && <Link className="ad-btn ad-btn--sm" href={`/admin/products?status=${filter}&page=${page - 1}`}>← Prev</Link>}
+          <span>Page {page} of {pages}</span>
+          {page < pages && <Link className="ad-btn ad-btn--sm" href={`/admin/products?status=${filter}&page=${page + 1}`}>Next →</Link>}
+        </div>
+      )}
     </div>
   );
 }

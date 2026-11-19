@@ -8,13 +8,14 @@ describe("delivery fee", () => {
     expect(deliveryFee("today", 30000, cfg)).toBe(60000);
   });
 
-  it("charges less for scheduled runs", () => {
-    expect(deliveryFee("tomorrow", 30000, cfg)).toBe(40000);
-    expect(deliveryFee("date", 30000, cfg)).toBe(40000);
+  it("charges the admin-configured fee for scheduled runs, with no hidden cap", () => {
+    expect(deliveryFee("tomorrow", 30000, cfg)).toBe(60000);
+    expect(deliveryFee("date", 30000, cfg)).toBe(60000);
+    expect(deliveryFee("date", 30000, { feeCents: 95000, freeOverCents: null })).toBe(95000);
   });
 
-  it("never makes scheduled dearer than same-day", () => {
-    expect(deliveryFee("tomorrow", 30000, { feeCents: 30000, freeOverCents: null })).toBe(30000);
+  it("follows fee changes immediately", () => {
+    expect(deliveryFee("date", 30000, { feeCents: 30000, freeOverCents: null })).toBe(30000);
   });
 
   it("is free for letterbox and pickup", () => {

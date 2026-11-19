@@ -40,21 +40,18 @@ export type DeliveryOption = (typeof DELIVERY_OPTIONS)[number];
 
 export type DeliveryConfig = { feeCents: number; freeOverCents: number | null };
 
-/** Scheduled (next-day or later) courier runs cost less than same-day. */
-const SCHEDULED_FEE_CENTS = 40000;
-
 /**
- * Fee for one delivery method. Same-day uses the owner-configured fee,
- * scheduled runs are capped at the scheduled rate, letterbox and pickup are
- * free, and the free-delivery threshold zeroes everything.
+ * Fee for one delivery method. Courier runs (same-day or scheduled) use the
+ * owner-configured fee, letterbox and pickup are free, and the free-delivery
+ * threshold zeroes everything.
  */
 export function deliveryFee(option: DeliveryOption, subtotal: number, cfg: DeliveryConfig) {
   if (subtotal <= 0) return 0;
   if (cfg.freeOverCents != null && subtotal >= cfg.freeOverCents) return 0;
   switch (option) {
-    case "today":     return cfg.feeCents;
+    case "today":
     case "tomorrow":
-    case "date":      return Math.min(cfg.feeCents, SCHEDULED_FEE_CENTS);
+    case "date":      return cfg.feeCents;
     case "letterbox":
     case "pickup":    return 0;
   }

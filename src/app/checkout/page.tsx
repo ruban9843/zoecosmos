@@ -132,6 +132,11 @@ export default function CheckoutPage() {
       }
       const data = await res.json();
       await clear();
+      // Set only once a payment gateway is plugged into lib/payments.
+      if (data.redirectUrl) {
+        window.location.assign(data.redirectUrl);
+        return;
+      }
       router.push(`/success?code=${encodeURIComponent(data.code)}`);
     } catch (e: any) {
       setError(e?.message || "Something went wrong");

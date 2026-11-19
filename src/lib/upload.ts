@@ -57,3 +57,9 @@ export async function deleteObject(key: string | null | undefined) {
   if (!key) return;
   await client().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
+
+/** True when `url`/`key` point at an object this app uploaded under `prefix`. */
+export function isOwnedUpload(url: string, key: string | undefined, prefix: string) {
+  if (!key || !key.startsWith(`${prefix}/`) || key.includes("..")) return false;
+  return url === (PUBLIC ? `${PUBLIC}/${key}` : key);
+}

@@ -39,8 +39,10 @@ export async function rateLimit(
     if (count === 1) {
       // First request in this window — start the expiry clock.
       await redis.expire(redisKey, windowSec);
+      return { ok: count <= limit, remaining: Math.max(0, limit - count), resetSec: windowSec };
     }
-    const ttl = await redis.ttl(redisKey);
+    // The TTL is only needed for the "try again in Ns" message, so skip the round trip otherwise.
+    const ttl = count > limit ? await redis.ttl(redisKey) : windowSec;
     const resetSec = ttl > 0 ? ttl : windowSec;
     return {
       ok: count <= limit,

@@ -31,7 +31,11 @@ export default async function CustomerOrderDetail({
   const order = await prisma.order.findFirst({
     where: { code, userId: session.user.id },
     include: {
-      items: true,
+      items: {
+        include: {
+          product: { select: { images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1, select: { url: true } } } },
+        },
+      },
       // Customers never see internal staff notes.
       events: {
         where: { kind: { not: "NOTE" } },
@@ -89,9 +93,15 @@ export default async function CustomerOrderDetail({
 
       <h2 className="font-serif text-2xl mb-4">Items</h2>
       <ul className="flex flex-col gap-2 mb-8">
-        {order.items.map((it) => (
-          <li key={it.id} className="flex justify-between items-baseline bg-bg-card border border-[var(--fs-line-soft)] rounded-xl px-5 py-4">
-            <div>
+        {order.items.map((it) => {
+          const img = it.imageUrl || it.product?.images[0]?.url;
+          return (
+          <li key={it.id} className="flex justify-between items-center gap-4 bg-bg-card border border-[var(--fs-line-soft)] rounded-xl px-5 py-4">
+            {img ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={img} alt="" width={56} height={70} loading="lazy" className="rounded-lg object-cover shrink-0" style={{ width: 56, height: 70 }} />
+            ) : null}
+            <div className="flex-1">
               <div className="font-serif text-lg">{it.productName}</div>
               <div className="text-xs text-ink-mute mt-1">
                 {it.qty} × {fmt(it.unitPrice)}{it.variantLabel ? ` · ${it.variantLabel}` : ""}
@@ -99,7 +109,8 @@ export default async function CustomerOrderDetail({
             </div>
             <div className="font-mono">{fmt(it.total)}</div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <div className="border-t border-[var(--fs-line-soft)] pt-4 mb-12 text-sm">

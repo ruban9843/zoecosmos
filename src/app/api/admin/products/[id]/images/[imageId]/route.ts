@@ -21,7 +21,6 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
   const image = await prisma.productImage.findFirst({ where: { id: imageId, productId: id } });
   if (!image) return bad("Image not found", 404);
 
-  await deleteObject(image.objectKey);
   await prisma.$transaction(async (tx) => {
     if (data.isPrimary) {
       await tx.productImage.updateMany({ where: { productId: id }, data: { isPrimary: false } });
@@ -57,6 +56,12 @@ export const DELETE = route(async (_req: Request, { params }: Params) => {
       if (next) await tx.productImage.update({ where: { id: next.id }, data: { isPrimary: true } });
     }
   });
+
+  try {
+    await deleteObject(image.objectKey);
+  } catch (error) {
+    console.warn("Image removed but storage object could not be deleted", { key: image.objectKey, error: (error as Error).message });
+  }
 
   invalidateCatalog();
   return json({ ok: true });

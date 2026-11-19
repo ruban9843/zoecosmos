@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "../../../../lib/prisma";
 import StatusPill from "../../../../components/admin/StatusPill";
 import OrderActions, { NoteForm } from "./OrderActions";
+import { STATUS_LABEL } from "../../../../lib/order-status";
 
 import { formatMoney } from "../../../../lib/currency";
 
@@ -26,7 +27,7 @@ export default async function AdminOrderDetail({
   const order = await prisma.order.findUnique({
     where: { code: decodeURIComponent(code) },
     include: {
-      items: { include: { product: { select: { slug: true } } } },
+      items: { include: { product: { select: { slug: true, images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1, select: { url: true } } } } } },
       events: {
         orderBy: { createdAt: "desc" },
         include: { actor: { select: { name: true, email: true } } },
@@ -77,6 +78,11 @@ export default async function AdminOrderDetail({
                 {order.items.map((it) => (
                   <tr key={it.id} style={{ cursor: "default" }}>
                     <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {(it.imageUrl || it.product?.images[0]?.url) && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={(it.imageUrl || it.product?.images[0]?.url)!} alt="" width={36} height={46} loading="lazy" style={{ width: 36, height: 46, objectFit: "cover", borderRadius: 6 }} />
+                      )}
                       {it.product?.slug ? (
                         <Link href={`/${it.product.slug}`} style={{ fontWeight: 500 }}>
                           {it.productName}
@@ -84,6 +90,7 @@ export default async function AdminOrderDetail({
                       ) : (
                         <span style={{ fontWeight: 500 }}>{it.productName}</span>
                       )}
+                      </div>
                     </td>
                     <td>{it.variantLabel || "—"}</td>
                     <td style={{ textAlign: "right" }}>{it.qty}</td>
@@ -141,7 +148,11 @@ export default async function AdminOrderDetail({
                     {when(ev.createdAt)}
                   </span>
                   <StatusPill status={ev.kind} />
-                  <span style={{ flex: 1 }}>{ev.message || ""}</span>
+                  <span style={{ flex: 1 }}>
+                    {ev.fromStatus && ev.toStatus ? `${STATUS_LABEL[ev.fromStatus]} → ${STATUS_LABEL[ev.toStatus]}` : ""}
+                    {ev.fromStatus && ev.message ? " · " : ""}
+                    {ev.message || ""}
+                  </span>
                   <span style={{ color: "var(--ad-ink-mute)", fontSize: 11 }}>
                     {ev.actor?.name || ev.actor?.email || "system"}
                   </span>

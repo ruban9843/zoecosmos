@@ -7,8 +7,9 @@
 import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
-import { auth } from "./auth";
+import { auth, type AppSession } from "./auth";
 import { unitPrice, deliveryFees, type DeliveryOption } from "./pricing";
+import { getDeliveryConfig } from "./delivery-config";
 
 const CART_COOKIE = "fs_cart";
 const CART_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -22,8 +23,8 @@ function newToken() {
  * we use (or create) the user's cart. Otherwise we look up by cookie token,
  * creating one on demand.
  */
-export async function getOrCreateCart() {
-  const session = await auth();
+export async function getOrCreateCart(knownSession?: AppSession | null) {
+  const session = knownSession === undefined ? await auth() : knownSession;
   const userId = session?.user?.id;
 
   if (userId) {
@@ -111,19 +112,6 @@ export async function mergeAnonCartIntoUserCart(userId: string) {
 }
 
 /**
- * Delivery pricing, read from the owner-editable `shop.delivery` setting.
- * Falls back to a ₹600 same-day fee if unset; per-method fees come from lib/pricing.
- */
-async function deliveryConfig() {
-  const row = await prisma.setting.findUnique({ where: { key: "shop.delivery" } });
-  const v = (row?.value as any) || {};
-  return {
-    feeCents: typeof v.feeCents === "number" ? v.feeCents : 60000,
-    freeOverCents: typeof v.freeOverCents === "number" ? v.freeOverCents : null,
-  };
-}
-
-/**
  * Compute totals from a cart's line items. Single source of pricing truth — never
  * trust the client.
  */
@@ -158,7 +146,7 @@ export async function priceCart(cartId: string, delivery: DeliveryOption = "date
       giftMessage: it.giftMessage,
     };
   });
-  const deliveryOptions = deliveryFees(subtotal, await deliveryConfig());
+  const deliveryOptions = deliveryFees(subtotal, await getDeliveryConfig());
   const deliveryFee = deliveryOptions[delivery];
   const total = subtotal + deliveryFee;
   return { lines, subtotal, delivery, deliveryFee, deliveryOptions, total, currency: "INR" };

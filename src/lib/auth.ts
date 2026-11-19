@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth as clerkAuth, currentUser } from "@clerk/nextjs/server";
 import type { Role } from "@prisma/client";
 import { prisma } from "./prisma";
@@ -16,8 +17,9 @@ export type AppSession = { user: AppUser };
 /**
  * Resolve the Clerk session to the application's user and role record.
  * The email fallback links a pre-existing Prisma record on first Clerk sign-in.
+ * Memoized per server render so layouts and pages share one lookup.
  */
-export async function auth(): Promise<AppSession | null> {
+export const auth = cache(async function auth(): Promise<AppSession | null> {
   const { userId } = await clerkAuth();
   if (!userId) return null;
 
@@ -28,7 +30,10 @@ export async function auth(): Promise<AppSession | null> {
   const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
   const image = clerkUser.imageUrl || null;
   const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
-  const user = existing
+  const unchanged = existing && existing.email === email && existing.name === name && existing.image === image;
+  const user = unchanged
+    ? existing
+    : existing
     ? await prisma.user.update({
         where: { id: existing.id },
         data: { email, name, image },
@@ -55,4 +60,4 @@ export async function auth(): Promise<AppSession | null> {
       role,
     },
   };
-}
+});

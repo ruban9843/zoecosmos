@@ -14,6 +14,12 @@ function code() {
   return "FS-" + Math.floor(20000 + Math.random() * 9999);
 }
 
+/** IST calendar day as UTC midnight — the encoding Order.deliveryDate uses. */
+function istDay(offset: number) {
+  const ist = new Date(Date.now() + 330 * 60 * 1000);
+  return new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() + offset));
+}
+
 async function main() {
   console.log("→ seeding…");
 
@@ -185,6 +191,7 @@ async function main() {
         status, paymentStatus: pay,
         subtotal: unit, deliveryFee: 600, total,
         deliveryWindow: window, city: "Tel Aviv",
+        deliveryDate: istDay(i % 2 === 0 ? 0 : -1),
         recipientName: customer.name,
         recipientPhone: "+972 50 555 8472",
         addressLine1: "Ben Yehuda 42, Apt 4",
@@ -204,10 +211,38 @@ async function main() {
   }
   console.log(`  ${statusFlow.length} demo orders`);
 
-  // 6. A couple of demo subscriptions -----------------------------------------
-  await prisma.subscription.create({ data: { userId: customers[0].id, cadence: SubscriptionCadence.FORTNIGHTLY, value: 4200, status: SubscriptionStatus.ACTIVE, deliveredCount: 9, totalCycles: 24, nextDelivery: new Date(Date.now() + 1000 * 60 * 60 * 24 * 4) } });
-  await prisma.subscription.create({ data: { userId: customers[2].id, cadence: SubscriptionCadence.WEEKLY,      value: 3200, status: SubscriptionStatus.ACTIVE, deliveredCount: 41, totalCycles: 48, nextDelivery: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2) } });
-  console.log(`  2 subscriptions`);
+  // 6. A demo merchant store with its own products and a subscription ---------
+  const merchant = await prisma.merchant.upsert({
+    where: { slug: "cafe-lumiere" },
+    update: {},
+    create: {
+      name: "Café Lumière", slug: "cafe-lumiere", contactName: "Daniel Singer",
+      email: "orders@cafe-lumiere.example", phone: "+91 98765 43210",
+      addressLine1: "12 Residency Road", city: "Bengaluru", zip: "560025",
+    },
+  });
+  const merchantLines = [];
+  for (const p of allProducts.slice(0, 2)) {
+    const standard = p.variants.find((v) => v.label === "Standard") ?? p.variants[0] ?? null;
+    const variantId = standard?.id ?? null;
+    const mp =
+      (await prisma.merchantProduct.findFirst({ where: { merchantId: merchant.id, productId: p.id, variantId } })) ??
+      (await prisma.merchantProduct.create({
+        data: { merchantId: merchant.id, productId: p.id, variantId, priceOverride: Math.round((p.basePrice + (standard?.priceDelta ?? 0)) * 0.85) },
+      }));
+    merchantLines.push(mp);
+  }
+  if ((await prisma.subscription.count({ where: { merchantId: merchant.id } })) === 0 && merchantLines.length) {
+    await prisma.subscription.create({
+      data: {
+        merchantId: merchant.id, cadence: SubscriptionCadence.WEEKLY, status: SubscriptionStatus.ACTIVE,
+        currency: "INR", deliveredCount: 3, totalCycles: 52, nextDelivery: istDay(2),
+        value: merchantLines.reduce((s, mp) => s + (mp.priceOverride ?? 0) * 2, 0),
+        items: { create: merchantLines.map((mp) => ({ merchantProductId: mp.id, qty: 2 })) },
+      },
+    });
+  }
+  console.log(`  1 merchant store with ${merchantLines.length} products and a weekly subscription`);
 
   // 7. Shop settings ----------------------------------------------------------
   await prisma.setting.upsert({

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "../../../../lib/prisma";
 import { json, route, readBody } from "../../../../lib/api";
 import { requireOwner } from "../../../../lib/auth-helpers";
+import { deliverySettingsSchema, invalidateSettings } from "../../../../lib/delivery-config";
 
 const daySchema = z.object({
   open: z.string().max(5).optional(),
@@ -14,13 +15,7 @@ const hoursSchema = z.object({
   fri: daySchema, sat: daySchema, sun: daySchema,
 });
 
-const deliverySchema = z.object({
-  sameDayCutoff: z.string().max(5),
-  lastSlot: z.string().max(5),
-  windows: z.array(z.string().min(1).max(40)).max(12),
-  feeCents: z.number().int().min(0).max(1_000_000).optional(),
-  freeOverCents: z.number().int().min(0).max(10_000_000).optional(),
-});
+const deliverySchema = deliverySettingsSchema;
 
 const patchSchema = z
   .object({
@@ -61,6 +56,7 @@ export const PATCH = route(async (req: Request) => {
     );
   }
   await prisma.$transaction(writes);
+  invalidateSettings();
 
   const rows = await prisma.setting.findMany();
   return json(Object.fromEntries(rows.map((r) => [r.key, r.value])));

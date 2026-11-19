@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { OrderStatus, PaymentStatus, OrderEventKind } from "@prisma/client";
 import { prisma } from "../../../../../lib/prisma";
-import { json, route, bad, readBody } from "../../../../../lib/api";
+import { json, route, bad, readBody, HttpError } from "../../../../../lib/api";
 import { requireStaff } from "../../../../../lib/auth-helpers";
-import { notifyOrderStatus } from "../../../../../lib/order-notifications";
+import { statusEmail } from "../../../../../lib/order-notifications";
+import { enqueue, flushAfterResponse } from "../../../../../lib/notifications";
+import { canTransition, STATUS_EVENT, STATUS_LABEL } from "../../../../../lib/order-status";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -43,15 +45,6 @@ const patchSchema = z
     message: "Nothing to update",
   });
 
-const STATUS_EVENT: Record<OrderStatus, OrderEventKind> = {
-  NEW: "ACCEPTED",
-  TYING: "TYING",
-  READY: "READY",
-  OUT_FOR_DELIVERY: "OUT",
-  DELIVERED: "DELIVERED",
-  CANCELED: "CANCELED",
-};
-
 /** PATCH /api/admin/orders/[id] — change status / payment, append a note. */
 export const PATCH = route(async (req: Request, { params }: Params) => {
   const staff = await requireStaff();
@@ -61,21 +54,34 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
   const order = await findOrder(id);
   if (!order) return bad("Order not found", 404);
 
-  await prisma.$transaction(async (tx) => {
-    const events: { kind: OrderEventKind; message?: string }[] = [];
+  const statusChange = data.status && data.status !== order.status ? data.status : null;
+  if (statusChange && !canTransition(order.status, statusChange)) {
+    return bad(`Can't move an order from ${STATUS_LABEL[order.status]} to ${STATUS_LABEL[statusChange]}`, 409);
+  }
 
-    if (data.status && data.status !== order.status) {
+  await prisma.$transaction(async (tx) => {
+    const events: { kind: OrderEventKind; message?: string; fromStatus?: OrderStatus; toStatus?: OrderStatus }[] = [];
+
+    if (statusChange) {
+      // Guard against a concurrent move: only apply if the status is still what we validated.
+      const moved = await tx.order.updateMany({
+        where: { id: order.id, status: order.status },
+        data: { status: statusChange },
+      });
+      if (moved.count === 0) throw new HttpError("The order changed meanwhile — refresh and try again", 409);
       // Canceling returns tracked stock to the shelf.
-      if (data.status === "CANCELED") {
+      if (statusChange === "CANCELED") {
         for (const it of order.items) {
           if (!it.variantId) continue;
-          await tx.productVariant.update({
+          await tx.productVariant.updateMany({
             where: { id: it.variantId },
             data: { stockQty: { increment: it.qty } },
           });
         }
       }
-      events.push({ kind: STATUS_EVENT[data.status] });
+      events.push({ kind: STATUS_EVENT[statusChange], fromStatus: order.status, toStatus: statusChange });
+      const email = statusEmail({ ...order, status: statusChange }, order.status);
+      if (email) await enqueue(tx, order.id, [email]);
     }
 
     if (data.paymentStatus && data.paymentStatus !== order.paymentStatus) {
@@ -89,7 +95,6 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
     await tx.order.update({
       where: { id: order.id },
       data: {
-        ...(data.status ? { status: data.status } : {}),
         ...(data.paymentStatus ? { paymentStatus: data.paymentStatus } : {}),
         events: {
           create: events.map((e) => ({ ...e, actorId: staff.id })),
@@ -98,9 +103,6 @@ export const PATCH = route(async (req: Request, { params }: Params) => {
     });
   });
 
-  const updated = await findOrder(order.id);
-  if (updated && data.status && updated.status === data.status) {
-    await notifyOrderStatus(updated, order.status);
-  }
-  return json(updated);
+  if (statusChange) flushAfterResponse(order.id);
+  return json(await findOrder(order.id));
 });

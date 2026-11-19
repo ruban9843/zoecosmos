@@ -3,6 +3,7 @@ import { prisma } from "../../../../../lib/prisma";
 import { json, route, bad, readBody } from "../../../../../lib/api";
 import { requireStaff } from "../../../../../lib/auth-helpers";
 import { invalidateCatalog } from "../../../../../lib/catalog";
+import { deleteObject } from "../../../../../lib/upload";
 
 /** GET /api/admin/products/[id] — full product with variants + images + stems. */
 export const GET = route(async (_req: Request, { params }: { params: Promise<{ id: string }> }) => {
@@ -56,17 +57,26 @@ export const PATCH = route(async (req: Request, { params }: { params: Promise<{ 
   return json({ product });
 });
 
-/** DELETE /api/admin/products/[id] — soft-archive by default; ?hard=1 to fully delete. */
+/**
+ * DELETE /api/admin/products/[id] — soft-archive by default; ?hard=1 deletes
+ * permanently (cart lines cascade, past orders keep their snapshots).
+ */
 export const DELETE = route(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   await requireStaff();
   const { id } = await params;
   const url = new URL(req.url);
   const hard = url.searchParams.get("hard") === "1";
-  const existing = await prisma.product.findFirst({ where: { OR: [{ id }, { slug: id }] } });
+  const existing = await prisma.product.findFirst({
+    where: { OR: [{ id }, { slug: id }] },
+    include: { images: { select: { objectKey: true } } },
+  });
   if (!existing) return bad("Product not found", 404);
 
   if (hard) {
     await prisma.product.delete({ where: { id: existing.id } });
+    const results = await Promise.allSettled(existing.images.map((img) => deleteObject(img.objectKey)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) console.warn("Product deleted but some storage objects remain", { productId: existing.id, failed });
   } else {
     await prisma.product.update({ where: { id: existing.id }, data: { status: "ARCHIVED" } });
   }

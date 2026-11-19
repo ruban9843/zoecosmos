@@ -2,7 +2,7 @@ import React from "react";
 
 const items = [
   "❀ Peony season — May to early July",
-  "✿ Subscriptions from ₹4,200 / month",
+  "✿ Flower subscriptions for businesses",
   "❁ Letterbox flowers, posted UK-wide",
   "✾ Saturday market, Florentin",
   "❀ Workshops every other Thursday",

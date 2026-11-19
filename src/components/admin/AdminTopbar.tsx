@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useUIStore } from "../../hooks/useUIStore";
 import { formatMoney } from "../../lib/currency";
+import ThemeToggle, { type AdminTheme } from "./ThemeToggle";
 
 type Order = { id: string; code: string; status: string; total: number; currency: string; recipientName: string };
 type Product = { id: string; slug: string; name: string; sku: string; basePrice: number; currency: string };
@@ -10,7 +11,7 @@ type Customer = { id: string; name: string | null; email: string };
 
 const fmt = (cents: number) => formatMoney(cents);
 
-export default function AdminTopbar() {
+export default function AdminTopbar({ theme = "light" }: { theme?: AdminTheme }) {
   const now = new Date();
   const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const date = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
@@ -158,6 +159,7 @@ export default function AdminTopbar() {
         <span>{date}</span>
         <b>{time} · Florentin shop</b>
       </div>
+      <ThemeToggle initial={theme} />
     </header>
   );
 }

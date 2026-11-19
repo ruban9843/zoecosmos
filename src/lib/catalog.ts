@@ -117,7 +117,7 @@ async function _getProductBySlug(slug: string): Promise<ProductDetail | null> {
       stems:    { orderBy: { id: "asc" } },
     },
   });
-  if (!product || product.status === "DRAFT") return null;
+  if (!product || product.status !== "ACTIVE") return null;
   return {
     ...(toPublicProduct(product) as ProductSummary),
     longDesc: product.longDesc,

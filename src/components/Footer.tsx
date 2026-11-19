@@ -5,7 +5,7 @@ import NewsletterForm from "./NewsletterForm";
 
 export default function Footer() {
   return (
-    <footer className="fs-foot">
+    <footer id="footer" className="fs-foot">
       <div className="fs-foot-top">
         <div className="fs-foot-brand">
           <ZoecomsosMark size={36} />
@@ -42,7 +42,7 @@ export default function Footer() {
             <h4>Studio</h4>
             <a href="#">Our growers</a>
             <a href="#">Workshops</a>
-            <a href="#">Subscriptions</a>
+            <a href="#footer">Business subscriptions</a>
             <a href="#">Journal</a>
           </div>
           <div>

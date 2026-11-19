@@ -23,14 +23,34 @@ export default async function SuccessPage({
         />
       </div>
       <span className="fs-section-eyebrow">Order {order?.code || "received"}</span>
-      <h1>Off they go.</h1>
+      <h1>Thank you!</h1>
       <p>
-        We&apos;ve received your order. We&apos;ll contact you soon to confirm delivery and payment.
+        Your order has been received. A member of our team will contact you shortly to confirm
+        the details, and your order will be on its way to you soon.
       </p>
+
+      {order && order.items.length > 0 && (
+        <ul className="fs-success-items">
+          {order.items.map((it) => (
+            <li key={it.id}>
+              {it.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={it.imageUrl} alt="" width={56} height={70} loading="lazy" />
+              ) : (
+                <span className="fs-success-items-ph" aria-hidden="true" />
+              )}
+              <span>
+                {it.productName}
+                {it.variantLabel ? ` · ${it.variantLabel}` : ""} × {it.qty}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {order && (
         <div className="fs-success-meta">
-          <div><b>Delivery</b><span>{order.deliveryWindow}</span></div>
+          <div><b>Delivery</b><span>{order.deliveryDate ? order.deliveryDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }) : order.deliveryWindow}</span></div>
           <div><b>Recipient</b><span>{order.recipientName || "You"}</span></div>
           <div><b>Total</b><span>{fmt(order.total)}</span></div>
         </div>

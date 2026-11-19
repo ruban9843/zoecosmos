@@ -107,6 +107,7 @@ model Product {
   stems        StemComponent[]
   cartItems    CartItem[]
   orderItems   OrderItem[]
+  merchantProducts MerchantProduct[]
 
   // Aggregated for fast read-paths; recomputed on stock movements.
   totalStock   Int           @default(0)
@@ -165,6 +166,7 @@ model ProductVariant {
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems  CartItem[]
   orderItems OrderItem[]
+  merchantProducts MerchantProduct[]
 
   @@index([productId])
 }
@@ -212,8 +214,8 @@ model CartItem {
   giftMessage String?
 
   cart        Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product     Product         @relation(fields: [productId], references: [id])
-  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime        @default(now())
 
@@ -259,15 +261,23 @@ model Order {
   events          OrderEvent[]
 
   // Payment hook-up (mocked for now — we just flag PAID from the admin)
-  paymentRef      String?
+  paymentRef      String?       @unique
+
+  merchantId      String?
+  subscriptionId  String?
 
   user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  merchant        Merchant?     @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  notifications   Notification[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   @@index([status, createdAt])
   @@index([userId])
+  @@index([deliveryDate, status])
+  @@index([merchantId])
 }
 
 enum OrderStatus {
@@ -294,6 +304,7 @@ model OrderItem {
   // Snapshots — preserve what was bought even if catalog changes.
   productName   String
   variantLabel  String?
+  imageUrl      String?
   unitPrice     Int
   qty           Int             @default(1)
   total         Int
@@ -308,9 +319,11 @@ model OrderItem {
 model OrderEvent {
   id        String         @id @default(cuid())
   orderId   String
-  kind      OrderEventKind
-  message   String?
-  actorId   String?
+  kind       OrderEventKind
+  message    String?
+  actorId    String?
+  fromStatus OrderStatus?
+  toStatus   OrderStatus?
 
   order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   actor     User?          @relation("EventActor", fields: [actorId], references: [id], onDelete: SetNull)
@@ -335,9 +348,11 @@ enum OrderEventKind {
 
 // ─────────────────────────── SUBSCRIPTIONS ───────────────────────────
 
+// Subscriptions are sold to merchant stores only; merchantId is required by the API.
 model Subscription {
   id              String              @id @default(cuid())
-  userId          String
+  userId          String?
+  merchantId      String?
   productId       String?
   cadence         SubscriptionCadence
   status          SubscriptionStatus  @default(ACTIVE)
@@ -348,12 +363,109 @@ model Subscription {
   deliveredCount  Int     @default(0)
   totalCycles     Int?    // null = open-ended
 
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant        Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  items           SubscriptionItem[]
+  orders          Order[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([userId, status])
+  @@index([merchantId, status])
+  @@index([status, nextDelivery])
+}
+
+model SubscriptionItem {
+  id                String  @id @default(cuid())
+  subscriptionId    String
+  merchantProductId String
+  qty               Int     @default(1)
+
+  subscription      Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  merchantProduct   MerchantProduct @relation(fields: [merchantProductId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+// ─────────────────────────── MERCHANT STORES (B2B) ───────────────────────────
+
+model Merchant {
+  id           String  @id @default(cuid())
+  name         String
+  slug         String  @unique
+  contactName  String?
+  email        String
+  phone        String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  zip          String?
+  active       Boolean @default(true)
+
+  products      MerchantProduct[]
+  subscriptions Subscription[]
+  orders        Order[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MerchantProduct {
+  id            String  @id @default(cuid())
+  merchantId    String
+  productId     String
+  variantId     String?
+  priceOverride Int?    // per unit, paise; null = catalogue price
+  active        Boolean @default(true)
+
+  merchant      Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  subscriptionItems SubscriptionItem[]
+
+  @@unique([merchantId, productId, variantId])
+  @@index([merchantId])
+}
+
+// ─────────────────────────── NOTIFICATION OUTBOX ───────────────────────────
+
+model Notification {
+  id           String             @id @default(cuid())
+  orderId      String?
+  kind         NotificationKind
+  to           String
+  subject      String
+  text         String
+  html         String?
+  dedupeKey    String             @unique
+  status       NotificationStatus @default(PENDING)
+  scheduledFor DateTime           @default(now())
+  attempts     Int                @default(0)
+  lastError    String?
+  sentAt       DateTime?
+
+  order        Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime           @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+enum NotificationKind {
+  ORDER_PLACED_CUSTOMER
+  ORDER_PLACED_ADMIN
+  STATUS_TYING
+  STATUS_OUT
+  SCHEDULED_ADMIN_DIGEST
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 enum SubscriptionCadence {

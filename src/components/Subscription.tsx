@@ -8,15 +8,14 @@ export default function Subscription() {
           <span key={i}>❀</span>
         ))}
       </div>
-      <span className="fs-section-eyebrow">A flower subscription</span>
-      <h2 className="fs-sub-title">Every fortnight, a fresh face on the kitchen table.</h2>
+      <span className="fs-section-eyebrow">For businesses</span>
+      <h2 className="fs-sub-title">Fresh flowers for your café, hotel or office, on a schedule.</h2>
       <p>
-        We pick what&apos;s most beautiful that morning. Skip a week, change a date, cancel any
-        time. From ₹4,200.
+        Subscriptions are available for merchant stores. We agree your products and prices, then
+        deliver every week, fortnight or month. Our team will set it up with you.
       </p>
       <div className="fs-sub-actions">
-        <button className="fs-btn fs-btn--dark">Start a subscription</button>
-        <button className="fs-btn fs-btn--ghost">How it works →</button>
+        <a className="fs-btn fs-btn--dark" href="#footer">Contact our team</a>
       </div>
     </section>
   );
